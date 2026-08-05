@@ -1,0 +1,256 @@
+{
+  "id": "trip_kyoto_spring",
+  "destination": "Kyoto",
+  "country": "Japan",
+  "summary": "A calm, culture-rich Kyoto itinerary balancing temples, seasonal gardens, and neighborhood food walks — paced for discovery without rushing.",
+  "days": 5,
+  "travelers": 2,
+  "travelStyle": "mid-range",
+  "pace": "moderate",
+  "interests": ["culture", "food", "photography", "history", "nature"],
+  "budget": {
+    "total": 3200,
+    "currency": "USD",
+    "perPerson": 1600,
+    "breakdown": [
+      { "category": "Stay", "amount": 1100, "percentage": 34 },
+      { "category": "Food", "amount": 720, "percentage": 23 },
+      { "category": "Activities", "amount": 540, "percentage": 17 },
+      { "category": "Transport", "amount": 480, "percentage": 15 },
+      { "category": "Shopping", "amount": 360, "percentage": 11 }
+    ]
+  },
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Arrival & Gion twilight",
+      "dateLabel": "Day 1",
+      "activities": [
+        {
+          "id": "a1",
+          "time": "10:30",
+          "title": "Check in near Kawaramachi",
+          "description": "Settle into a compact mid-range hotel walking distance from the river and tram lines.",
+          "estimatedCost": 180,
+          "currency": "USD",
+          "duration": "45 min",
+          "category": "Stay",
+          "source": "Official tourism board"
+        },
+        {
+          "id": "a2",
+          "time": "13:00",
+          "title": "Nishiki Market lunch walk",
+          "description": "Sample seasonal street bites — grilled mochi, pickles, and matcha soft serve — at a relaxed pace.",
+          "estimatedCost": 35,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "Food",
+          "source": "Local food guide"
+        },
+        {
+          "id": "a3",
+          "time": "16:30",
+          "title": "Yasaka Shrine to Gion lanes",
+          "description": "Golden-hour stroll through preserved streets with soft lantern light and wooden machiya facades.",
+          "estimatedCost": 0,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "Culture",
+          "source": "City walking map"
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "title": "Temples & Arashiyama",
+      "dateLabel": "Day 2",
+      "activities": [
+        {
+          "id": "a4",
+          "time": "08:00",
+          "title": "Fushimi Inari early visit",
+          "description": "Walk the vermilion torii tunnels before peak crowds; pause at overlooks for photos.",
+          "estimatedCost": 0,
+          "currency": "USD",
+          "duration": "2.5 hrs",
+          "category": "Culture",
+          "source": "Temple visitor notes"
+        },
+        {
+          "id": "a5",
+          "time": "12:30",
+          "title": "Arashiyama bamboo & riverside lunch",
+          "description": "Short bamboo grove path followed by tofu set lunch overlooking the Katsura River.",
+          "estimatedCost": 42,
+          "currency": "USD",
+          "duration": "3 hrs",
+          "category": "Nature",
+          "source": "Regional travel digest"
+        },
+        {
+          "id": "a6",
+          "time": "16:00",
+          "title": "Tenryu-ji garden circuit",
+          "description": "UNESCO temple gardens with borrowed mountain scenery — ideal for quiet photography.",
+          "estimatedCost": 12,
+          "currency": "USD",
+          "duration": "1.5 hrs",
+          "category": "History",
+          "source": "UNESCO brief"
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "title": "Philosophy Path & crafts",
+      "dateLabel": "Day 3",
+      "activities": [
+        {
+          "id": "a7",
+          "time": "09:00",
+          "title": "Philosopher’s Path walk",
+          "description": "Canal-side cherry and maple corridor connecting Ginkaku-ji to Nanzen-ji area cafés.",
+          "estimatedCost": 0,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "Nature",
+          "source": "Walking club notes"
+        },
+        {
+          "id": "a8",
+          "time": "12:00",
+          "title": "Kaiseki-inspired lunch",
+          "description": "Seasonal multi-course lunch at a mid-range restaurant focused on Kyoto vegetables.",
+          "estimatedCost": 65,
+          "currency": "USD",
+          "duration": "1.5 hrs",
+          "category": "Food",
+          "source": "Cuisine review digest"
+        },
+        {
+          "id": "a9",
+          "time": "15:00",
+          "title": "Pottery workshop in Kiyomizu area",
+          "description": "Hands-on ceramics session with a local artisan — take-home piece included.",
+          "estimatedCost": 55,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "Culture",
+          "source": "Artisan directory"
+        }
+      ]
+    },
+    {
+      "day": 4,
+      "title": "Nara day trip",
+      "dateLabel": "Day 4",
+      "activities": [
+        {
+          "id": "a10",
+          "time": "08:40",
+          "title": "Train to Nara Park",
+          "description": "Direct JR ride; morning among free-roaming deer and open lawns near Todai-ji.",
+          "estimatedCost": 18,
+          "currency": "USD",
+          "duration": "1 hr",
+          "category": "Transport",
+          "source": "JR timetable summary"
+        },
+        {
+          "id": "a11",
+          "time": "10:30",
+          "title": "Todai-ji Great Buddha Hall",
+          "description": "Iconic wooden hall and bronze Buddha — allow time for surrounding park paths.",
+          "estimatedCost": 8,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "History",
+          "source": "Temple official guide"
+        },
+        {
+          "id": "a12",
+          "time": "14:00",
+          "title": "Naramachi café & craft streets",
+          "description": "Wander lattice-front houses, pick up small gifts, and unwind before return.",
+          "estimatedCost": 28,
+          "currency": "USD",
+          "duration": "2.5 hrs",
+          "category": "Shopping",
+          "source": "Neighborhood guide"
+        }
+      ]
+    },
+    {
+      "day": 5,
+      "title": "Slow morning & departure",
+      "dateLabel": "Day 5",
+      "activities": [
+        {
+          "id": "a13",
+          "time": "08:30",
+          "title": "Matcha breakfast tasting",
+          "description": "Quiet tearoom breakfast with seasonal wagashi before checkout.",
+          "estimatedCost": 22,
+          "currency": "USD",
+          "duration": "1 hr",
+          "category": "Food",
+          "source": "Tea house listing"
+        },
+        {
+          "id": "a14",
+          "time": "11:00",
+          "title": "Souvenir hour at Teramachi",
+          "description": "Lightweight gifts — washi, incense, and snacks suited for travel.",
+          "estimatedCost": 40,
+          "currency": "USD",
+          "duration": "1.5 hrs",
+          "category": "Shopping",
+          "source": "Retail roundup"
+        },
+        {
+          "id": "a15",
+          "time": "14:00",
+          "title": "Airport transfer buffer",
+          "description": "Reserved express transfer with cushion time for security and boarding.",
+          "estimatedCost": 45,
+          "currency": "USD",
+          "duration": "2 hrs",
+          "category": "Transport",
+          "source": "Transit planner"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "s1",
+      "title": "Kyoto Official Travel Guide",
+      "publisher": "Kyoto City Tourism",
+      "type": "official"
+    },
+    {
+      "id": "s2",
+      "title": "Seasonal Walking Routes",
+      "publisher": "Japan Travel Digest",
+      "type": "guide"
+    },
+    {
+      "id": "s3",
+      "title": "Neighborhood Food Notes",
+      "publisher": "Local Table",
+      "type": "review"
+    },
+    {
+      "id": "s4",
+      "title": "Temple Visitor Essentials",
+      "publisher": "Heritage Brief",
+      "type": "blog"
+    }
+  ],
+  "map": {
+    "label": "Kyoto, Japan",
+    "lat": 35.0116,
+    "lng": 135.7681
+  }
+}

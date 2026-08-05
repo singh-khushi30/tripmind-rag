@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
 import { Footer, Header, Main } from "@/components/layout";
 
@@ -15,21 +15,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "TripMind",
     template: "%s · TripMind",
   },
-  description: "AI-powered travel planning with source-grounded itineraries.",
+  description:
+    "Plan smarter travel with calm, source-grounded itineraries tailored to your style and budget.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full`}
     >
-      <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
+      <body className="text-foreground flex min-h-full flex-col font-sans">
         <Header />
         <Main>{children}</Main>
         <Footer />

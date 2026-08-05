@@ -1,0 +1,42 @@
+[
+  {
+    "id": "saved_kyoto",
+    "destination": "Kyoto, Japan",
+    "date": "2026-08-22",
+    "budget": 3200,
+    "currency": "USD",
+    "days": 5,
+    "coverTone": "teal",
+    "imageKey": "kyoto"
+  },
+  {
+    "id": "saved_lisbon",
+    "destination": "Lisbon, Portugal",
+    "date": "2026-09-08",
+    "budget": 2400,
+    "currency": "EUR",
+    "days": 4,
+    "coverTone": "sand",
+    "imageKey": "lisbon"
+  },
+  {
+    "id": "saved_reykjavik",
+    "destination": "Reykjavík, Iceland",
+    "date": "2026-10-18",
+    "budget": 4100,
+    "currency": "USD",
+    "days": 6,
+    "coverTone": "mist",
+    "imageKey": "reykjavik"
+  },
+  {
+    "id": "saved_marrakech",
+    "destination": "Marrakech, Morocco",
+    "date": "2026-11-02",
+    "budget": 1800,
+    "currency": "USD",
+    "days": 5,
+    "coverTone": "slate",
+    "imageKey": "marrakech"
+  }
+]
