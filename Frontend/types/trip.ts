@@ -49,6 +49,12 @@ export type TripSource = {
   type: "guide" | "review" | "official" | "blog";
 };
 
+export type TripMapMarker = {
+  x: number;
+  y: number;
+  label: string;
+};
+
 export type TripResult = {
   id: string;
   destination: string;
@@ -71,6 +77,7 @@ export type TripResult = {
     label: string;
     lat: number;
     lng: number;
+    markers?: TripMapMarker[];
   };
 };
 
@@ -83,17 +90,4 @@ export type SavedTrip = {
   days: number;
   coverTone: "teal" | "slate" | "sand" | "mist";
   imageKey: "kyoto" | "lisbon" | "reykjavik" | "marrakech";
-};
-
-export type TripPlannerFormValues = {
-  destination: string;
-  days: number;
-  budget: number;
-  currency: Currency;
-  travelers: number;
-  travelStyle: TravelStyle;
-  interests: Interest[];
-  pace: TravelPace;
-  foodPreference: FoodPreference;
-  specialNotes: string;
 };

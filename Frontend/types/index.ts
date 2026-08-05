@@ -1,4 +1,9 @@
 export type {
+  TripPlannerFormValues,
+  TripPlannerStoragePayload,
+} from "./planner";
+
+export type {
   BudgetBreakdownItem,
   Currency,
   FoodPreference,
@@ -8,7 +13,7 @@ export type {
   TravelStyle,
   TripActivity,
   TripDay,
-  TripPlannerFormValues,
+  TripMapMarker,
   TripResult,
   TripSource,
 } from "./trip";

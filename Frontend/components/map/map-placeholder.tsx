@@ -4,27 +4,32 @@ import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import type { TripMapMarker } from "@/types/trip";
 
 type MapPlaceholderProps = {
   label: string;
   lat: number;
   lng: number;
+  markers?: TripMapMarker[];
   className?: string;
 };
 
-const MARKERS = [
-  { x: 22, y: 58, label: "Gion" },
-  { x: 48, y: 36, label: "Fushimi" },
-  { x: 68, y: 48, label: "Arashiyama" },
-  { x: 78, y: 28, label: "Nara" },
-] as const;
+const FALLBACK_MARKERS: TripMapMarker[] = [
+  { x: 28, y: 58, label: "Center" },
+  { x: 48, y: 38, label: "Landmark" },
+  { x: 66, y: 50, label: "Food" },
+  { x: 78, y: 30, label: "Walk" },
+];
 
 export function MapPlaceholder({
   label,
   lat,
   lng,
+  markers = FALLBACK_MARKERS,
   className,
 }: MapPlaceholderProps) {
+  const routeMarkers = markers.length > 0 ? markers : FALLBACK_MARKERS;
+
   return (
     <div
       className={cn(
@@ -35,7 +40,6 @@ export function MapPlaceholder({
       <div className="absolute inset-0 bg-[#dce8ef]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,oklch(0.78_0.05_200/0.55),transparent_42%),radial-gradient(circle_at_75%_65%,oklch(0.82_0.04_150/0.4),transparent_40%)]" />
 
-      {/* Soft “terrain” blobs */}
       <div className="absolute top-[18%] left-[12%] h-24 w-36 rounded-full bg-[#c5d9c8]/55 blur-2xl" />
       <div className="absolute right-[10%] bottom-[28%] h-28 w-40 rounded-full bg-[#b9cfe0]/50 blur-2xl" />
 
@@ -45,7 +49,6 @@ export function MapPlaceholder({
         preserveAspectRatio="none"
         aria-hidden
       >
-        {/* Grid roads */}
         <g stroke="oklch(0.55 0.03 240 / 0.18)" strokeWidth="0.35">
           <path d="M8 20 H92" />
           <path d="M8 40 H92" />
@@ -57,7 +60,6 @@ export function MapPlaceholder({
           <path d="M80 8 V92" />
         </g>
 
-        {/* Route path */}
         <path
           d="M22 58 C30 50, 38 42, 48 36 S62 42, 68 48 S74 34, 78 28"
           fill="none"
@@ -77,9 +79,9 @@ export function MapPlaceholder({
         />
       </svg>
 
-      {MARKERS.map((marker, index) => (
+      {routeMarkers.map((marker, index) => (
         <motion.div
-          key={marker.label}
+          key={`${marker.label}-${index}`}
           className="absolute -translate-x-1/2 -translate-y-full"
           style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
           initial={{ opacity: 0, y: 6 }}

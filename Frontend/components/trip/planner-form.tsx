@@ -1,14 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Sparkles } from "lucide-react";
+import { LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
 
+import { FormField } from "@/components/forms/form-field";
+import { InterestChipGroup } from "@/components/forms/interest-chip-group";
+import { StyleOptionGroup } from "@/components/forms/style-option-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,14 +27,14 @@ import {
   TRAVEL_PACES,
   TRAVEL_STYLES,
 } from "@/data/mock/planner-options";
+import { saveTripPlannerSubmission } from "@/lib/storage/trip-planner";
 import {
   tripPlannerSchema,
   type TripPlannerSchema,
-} from "@/lib/planner-schema";
-import { cn } from "@/lib/utils";
-import type { Interest, TravelStyle } from "@/types/trip";
+} from "@/lib/validation/trip-planner";
+import type { TripPlannerFormValues } from "@/types/planner";
 
-const DEFAULT_VALUES: TripPlannerSchema = {
+const DEFAULT_VALUES: TripPlannerFormValues = {
   destination: "Kyoto, Japan",
   days: 5,
   budget: 3200,
@@ -45,32 +47,55 @@ const DEFAULT_VALUES: TripPlannerSchema = {
   specialNotes: "Prefer quieter mornings and walkable neighborhoods.",
 };
 
+const RESET_VALUES: TripPlannerFormValues = {
+  destination: "",
+  days: 5,
+  budget: 1000,
+  currency: "USD",
+  travelers: 2,
+  travelStyle: "mid-range",
+  interests: [],
+  pace: "moderate",
+  foodPreference: undefined,
+  specialNotes: "",
+};
+
 export function PlannerForm() {
   const router = useRouter();
+  const formId = useId();
+  const [storageError, setStorageError] = useState<string | null>(null);
+
   const {
     register,
     control,
     handleSubmit,
+    reset,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<TripPlannerSchema>({
     resolver: zodResolver(tripPlannerSchema),
     defaultValues: DEFAULT_VALUES,
+    mode: "onBlur",
   });
 
-  const selectedInterests = useWatch({ control, name: "interests" });
-  const selectedStyle = useWatch({ control, name: "travelStyle" });
-  const days = useWatch({ control, name: "days" });
-  const budget = useWatch({ control, name: "budget" });
+  const selectedInterests = useWatch({ control, name: "interests" }) ?? [];
+  const selectedStyle = useWatch({ control, name: "travelStyle" }) ?? "mid-range";
+  const days = useWatch({ control, name: "days" }) ?? 5;
+  const budget = useWatch({ control, name: "budget" }) ?? 0;
+  const specialNotes = useWatch({ control, name: "specialNotes" }) ?? "";
 
-  function toggleInterest(interest: Interest) {
-    const next = selectedInterests.includes(interest)
-      ? selectedInterests.filter((item) => item !== interest)
-      : [...selectedInterests, interest];
-    setValue("interests", next, { shouldValidate: true });
-  }
+  async function onSubmit(values: TripPlannerSchema) {
+    setStorageError(null);
 
-  function onSubmit() {
+    // Brief loading state so the submit UX feels intentional.
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+
+    const result = saveTripPlannerSubmission(values);
+    if (!result.ok) {
+      setStorageError(result.error);
+      return;
+    }
+
     router.push("/results");
   }
 
@@ -78,21 +103,46 @@ export function PlannerForm() {
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="surface-card space-y-8 p-6 sm:p-8"
+      noValidate
+      aria-describedby={storageError ? `${formId}-storage-error` : undefined}
     >
+      {storageError ? (
+        <div
+          id={`${formId}-storage-error`}
+          role="alert"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
+        >
+          {storageError}
+        </div>
+      ) : null}
+
       <div className="grid gap-6 md:grid-cols-2">
-        <Field
+        <FormField
+          id={`${formId}-destination`}
           label="Destination"
           error={errors.destination?.message}
+          required
           className="md:col-span-2"
         >
           <Input
+            id={`${formId}-destination`}
             placeholder="Where are you going?"
             className="h-11"
+            autoComplete="address-level2"
+            aria-invalid={errors.destination ? true : undefined}
+            aria-describedby={
+              errors.destination ? `${formId}-destination-error` : undefined
+            }
             {...register("destination")}
           />
-        </Field>
+        </FormField>
 
-        <Field label={`Number of days · ${days}`}>
+        <FormField
+          id={`${formId}-days`}
+          label={`Number of days · ${days}`}
+          error={errors.days?.message}
+          required
+        >
           <Controller
             control={control}
             name="days"
@@ -100,31 +150,41 @@ export function PlannerForm() {
               <div className="space-y-3 pt-2">
                 <Slider
                   min={1}
-                  max={21}
+                  max={14}
                   value={[field.value]}
                   onValueChange={(value) => {
                     const next = Array.isArray(value) ? value[0] : value;
                     field.onChange(next ?? 1);
                   }}
+                  aria-label="Number of days"
                 />
                 <Input
+                  id={`${formId}-days`}
                   type="number"
                   min={1}
-                  max={30}
+                  max={14}
                   className="h-11"
                   value={field.value}
-                  onChange={(event) =>
-                    field.onChange(Number(event.target.value) || 1)
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    field.onChange(raw === "" ? NaN : Number(raw));
+                  }}
+                  onBlur={field.onBlur}
+                  aria-invalid={errors.days ? true : undefined}
+                  aria-describedby={
+                    errors.days ? `${formId}-days-error` : undefined
                   }
                 />
               </div>
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field
-          label={`Budget · ${budget.toLocaleString()}`}
+        <FormField
+          id={`${formId}-budget`}
+          label={`Budget · ${Number.isFinite(budget) ? budget.toLocaleString() : "—"}`}
           error={errors.budget?.message}
+          required
         >
           <Controller
             control={control}
@@ -132,37 +192,60 @@ export function PlannerForm() {
             render={({ field }) => (
               <div className="space-y-3 pt-2">
                 <Slider
-                  min={100}
+                  min={1}
                   max={15000}
                   step={50}
-                  value={[field.value]}
+                  value={[Math.max(field.value || 1, 1)]}
                   onValueChange={(value) => {
                     const next = Array.isArray(value) ? value[0] : value;
-                    field.onChange(next ?? 100);
+                    field.onChange(next ?? 1);
                   }}
+                  aria-label="Budget amount"
                 />
                 <Input
+                  id={`${formId}-budget`}
                   type="number"
-                  min={100}
+                  min={1}
                   className="h-11"
-                  value={field.value}
-                  onChange={(event) =>
-                    field.onChange(Number(event.target.value) || 100)
+                  value={Number.isFinite(field.value) ? field.value : ""}
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    field.onChange(raw === "" ? NaN : Number(raw));
+                  }}
+                  onBlur={field.onBlur}
+                  aria-invalid={errors.budget ? true : undefined}
+                  aria-describedby={
+                    errors.budget ? `${formId}-budget-error` : undefined
                   }
                 />
               </div>
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field label="Currency">
+        <FormField
+          id={`${formId}-currency`}
+          label="Currency"
+          error={errors.currency?.message}
+          required
+        >
           <Controller
             control={control}
             name="currency"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="h-11 w-full">
-                  <SelectValue />
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger
+                  id={`${formId}-currency`}
+                  className="h-11 w-full"
+                  aria-invalid={errors.currency ? true : undefined}
+                  aria-describedby={
+                    errors.currency ? `${formId}-currency-error` : undefined
+                  }
+                >
+                  <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
                   {CURRENCIES.map((currency) => (
@@ -174,89 +257,107 @@ export function PlannerForm() {
               </Select>
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field label="Travelers" error={errors.travelers?.message}>
+        <FormField
+          id={`${formId}-travelers`}
+          label="Travelers"
+          error={errors.travelers?.message}
+          required
+        >
           <Controller
             control={control}
             name="travelers"
             render={({ field }) => (
               <Input
+                id={`${formId}-travelers`}
                 type="number"
                 min={1}
-                max={12}
+                max={10}
                 className="h-11"
-                value={field.value}
-                onChange={(event) =>
-                  field.onChange(Number(event.target.value) || 1)
+                value={Number.isFinite(field.value) ? field.value : ""}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  field.onChange(raw === "" ? NaN : Number(raw));
+                }}
+                onBlur={field.onBlur}
+                aria-invalid={errors.travelers ? true : undefined}
+                aria-describedby={
+                  errors.travelers ? `${formId}-travelers-error` : undefined
                 }
               />
             )}
           />
-        </Field>
+        </FormField>
       </div>
 
-      <Field label="Travel style" error={errors.travelStyle?.message}>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {TRAVEL_STYLES.map((style) => (
-            <button
-              key={style.value}
-              type="button"
-              onClick={() =>
-                setValue("travelStyle", style.value as TravelStyle, {
-                  shouldValidate: true,
-                })
-              }
-              className={cn(
-                "rounded-2xl border px-4 py-3.5 text-left transition-all",
-                selectedStyle === style.value
-                  ? "border-brand bg-accent/70 shadow-[var(--shadow-soft)]"
-                  : "border-border hover:bg-secondary/80 bg-white/50",
-              )}
-            >
-              <p className="text-foreground text-sm font-medium">
-                {style.label}
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                {style.description}
-              </p>
-            </button>
-          ))}
-        </div>
-      </Field>
+      <FormField
+        id={`${formId}-travel-style`}
+        label="Travel style"
+        error={errors.travelStyle?.message}
+        required
+      >
+        <span id={`${formId}-travel-style-label`} className="sr-only">
+          Travel style
+        </span>
+        <StyleOptionGroup
+          id={`${formId}-travel-style`}
+          value={selectedStyle}
+          options={TRAVEL_STYLES}
+          error={errors.travelStyle?.message}
+          onChange={(value) =>
+            setValue("travelStyle", value, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+          }
+        />
+      </FormField>
 
-      <Field label="Interests" error={errors.interests?.message}>
-        <div className="flex flex-wrap gap-2">
-          {INTERESTS.map((interest) => {
-            const active = selectedInterests.includes(interest.value);
-            return (
-              <button
-                key={interest.value}
-                type="button"
-                onClick={() => toggleInterest(interest.value)}
-                className={cn(
-                  "rounded-full border px-3.5 py-1.5 text-sm transition-all",
-                  active
-                    ? "border-brand bg-brand text-brand-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary",
-                )}
-              >
-                {interest.label}
-              </button>
-            );
-          })}
-        </div>
-      </Field>
+      <FormField
+        id={`${formId}-interests`}
+        label="Interests"
+        error={errors.interests?.message}
+        required
+      >
+        <span id={`${formId}-interests-label`} className="sr-only">
+          Interests
+        </span>
+        <InterestChipGroup
+          id={`${formId}-interests`}
+          values={selectedInterests}
+          options={INTERESTS}
+          error={errors.interests?.message}
+          onChange={(values) =>
+            setValue("interests", values, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+          }
+        />
+      </FormField>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Field label="Travel pace">
+        <FormField
+          id={`${formId}-pace`}
+          label="Travel pace"
+          error={errors.pace?.message}
+          required
+        >
           <Controller
             control={control}
             name="pace"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="h-11 w-full">
-                  <SelectValue />
+                <SelectTrigger
+                  id={`${formId}-pace`}
+                  className="h-11 w-full"
+                  aria-invalid={errors.pace ? true : undefined}
+                  aria-describedby={
+                    errors.pace ? `${formId}-pace-error` : undefined
+                  }
+                >
+                  <SelectValue placeholder="Select pace" />
                 </SelectTrigger>
                 <SelectContent>
                   {TRAVEL_PACES.map((pace) => (
@@ -268,16 +369,40 @@ export function PlannerForm() {
               </Select>
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field label="Food preference">
+        <FormField
+          id={`${formId}-food`}
+          label="Food preference"
+          error={errors.foodPreference?.message}
+          description="Optional"
+        >
           <Controller
             control={control}
             name="foodPreference"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="h-11 w-full">
-                  <SelectValue />
+              <Select
+                value={field.value ?? ""}
+                onValueChange={(value) =>
+                  field.onChange(value === "" ? undefined : value)
+                }
+              >
+                <SelectTrigger
+                  id={`${formId}-food`}
+                  className="h-11 w-full"
+                  aria-invalid={errors.foodPreference ? true : undefined}
+                  aria-describedby={
+                    [
+                      `${formId}-food-description`,
+                      errors.foodPreference
+                        ? `${formId}-food-error`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
+                  }
+                >
+                  <SelectValue placeholder="Select preference" />
                 </SelectTrigger>
                 <SelectContent>
                   {FOOD_PREFERENCES.map((pref) => (
@@ -289,47 +414,67 @@ export function PlannerForm() {
               </Select>
             )}
           />
-        </Field>
+        </FormField>
       </div>
 
-      <Field label="Special notes">
+      <FormField
+        id={`${formId}-notes`}
+        label="Special notes"
+        error={errors.specialNotes?.message}
+        description={`${specialNotes.length}/500 characters`}
+      >
         <Textarea
+          id={`${formId}-notes`}
           rows={4}
           placeholder="Allergies, must-sees, accessibility needs…"
           className="min-h-28 resize-y"
+          maxLength={500}
+          aria-invalid={errors.specialNotes ? true : undefined}
+          aria-describedby={
+            [
+              `${formId}-notes-description`,
+              errors.specialNotes ? `${formId}-notes-error` : null,
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
           {...register("specialNotes")}
         />
-      </Field>
+      </FormField>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="h-12 w-full text-base"
-        size="lg"
-      >
-        <Sparkles data-icon="inline-start" />
-        Generate Trip
-      </Button>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-12 flex-1 text-base"
+          size="lg"
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? (
+            <LoaderCircle
+              data-icon="inline-start"
+              className="animate-spin"
+            />
+          ) : (
+            <Sparkles data-icon="inline-start" />
+          )}
+          {isSubmitting ? "Generating trip…" : "Generate Trip"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 sm:w-40"
+          size="lg"
+          disabled={isSubmitting}
+          onClick={() => {
+            setStorageError(null);
+            reset(RESET_VALUES);
+          }}
+        >
+          <RotateCcw data-icon="inline-start" />
+          Reset
+        </Button>
+      </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  error,
-  children,
-  className,
-}: {
-  label: string;
-  error?: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("space-y-2", className)}>
-      <Label>{label}</Label>
-      {children}
-      {error ? <p className="text-destructive text-xs">{error}</p> : null}
-    </div>
   );
 }

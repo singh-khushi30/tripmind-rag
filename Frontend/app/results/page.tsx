@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 
-import tripResult from "@/data/mock/trip-result.json";
 import { ResultsView } from "@/components/trip/results-view";
-import type { TripResult } from "@/types/trip";
 
 export const metadata: Metadata = {
   title: "Trip Results",
@@ -16,7 +14,6 @@ type ResultsPageProps = {
 
 export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const params = await searchParams;
-  const trip = tripResult as TripResult;
   const initialState =
     params.demo === "error"
       ? "error"
@@ -24,5 +21,5 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
         ? "ready"
         : "loading";
 
-  return <ResultsView trip={trip} initialState={initialState} />;
+  return <ResultsView initialState={initialState} />;
 }

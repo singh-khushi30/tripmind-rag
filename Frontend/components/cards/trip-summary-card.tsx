@@ -23,7 +23,9 @@ export function TripSummaryCard({ trip, className }: TripSummaryCardProps) {
         <div>
           <h2 className="font-heading text-foreground text-3xl tracking-tight sm:text-4xl">
             {trip.destination}
-            <span className="text-muted-foreground">, {trip.country}</span>
+            {trip.country ? (
+              <span className="text-muted-foreground">, {trip.country}</span>
+            ) : null}
           </h2>
           <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed sm:text-[15px]">
             {trip.summary}

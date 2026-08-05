@@ -12,15 +12,48 @@ import { ErrorState } from "@/components/states/error-state";
 import { BudgetBreakdown } from "@/components/trip/budget-breakdown";
 import { DayTimeline } from "@/components/trip/day-timeline";
 import { SourcesList } from "@/components/trip/sources-list";
+import { getMockItinerary } from "@/lib/mock-itineraries";
+import { loadTripPlannerSubmission } from "@/lib/storage/trip-planner";
+import { buildTripResult } from "@/lib/trip/build-trip-result";
 import type { TripResult } from "@/types/trip";
 
 type ResultsViewProps = {
-  trip: TripResult;
   initialState?: "loading" | "ready" | "error";
 };
 
+function getDemoTrip(): TripResult {
+  const mock = getMockItinerary("Kyoto, Japan", 5, "USD");
+
+  return {
+    id: "trip_demo_kyoto",
+    destination: mock.destinationLabel,
+    country: mock.country,
+    summary:
+      "A calm, culture-rich Kyoto itinerary balancing temples, seasonal gardens, and neighborhood food walks.",
+    days: 5,
+    travelers: 2,
+    travelStyle: "mid-range",
+    pace: "moderate",
+    interests: ["culture", "food", "photography", "history", "nature"],
+    budget: {
+      total: 3200,
+      currency: "USD",
+      perPerson: 1600,
+      breakdown: [
+        { category: "Stay", amount: 1100, percentage: 34 },
+        { category: "Food", amount: 720, percentage: 23 },
+        { category: "Activities", amount: 540, percentage: 17 },
+        { category: "Transport", amount: 480, percentage: 15 },
+        { category: "Shopping", amount: 360, percentage: 11 },
+      ],
+    },
+    itinerary: mock.itinerary,
+    sources: mock.sources,
+    map: mock.map,
+  };
+}
+
 export function ResultsView({
-  trip,
   initialState = "loading",
 }: ResultsViewProps) {
   const router = useRouter();
@@ -56,6 +89,15 @@ export function ResultsView({
     );
   }
 
+  return <ResultsReady />;
+}
+
+function ResultsReady() {
+  const [trip] = useState(() => {
+    const stored = loadTripPlannerSubmission();
+    return stored ? buildTripResult(stored) : getDemoTrip();
+  });
+
   return (
     <Container className="space-y-8 py-10">
       <div className="space-y-2">
@@ -83,6 +125,7 @@ export function ResultsView({
             label={trip.map.label}
             lat={trip.map.lat}
             lng={trip.map.lng}
+            markers={trip.map.markers}
           />
           <BudgetBreakdown
             items={trip.budget.breakdown}
