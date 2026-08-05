@@ -1,0 +1,39 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+
+import { Footer, Header, Main } from "@/components/layout";
+
+import "@/styles/globals.css";
+
+const geistSans = Geist({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "TripMind",
+    template: "%s · TripMind",
+  },
+  description: "AI-powered travel planning with source-grounded itineraries.",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
+        <Header />
+        <Main>{children}</Main>
+        <Footer />
+      </body>
+    </html>
+  );
+}
