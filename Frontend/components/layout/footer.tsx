@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Container } from "@/components/layout/container";
 
 const LINKS = [
-  { href: "/plan", label: "Plan a trip" },
-  { href: "/results", label: "View demo" },
-  { href: "/trips", label: "Saved trips" },
+  { href: "/trip/plan", label: "Plan a trip" },
+  { href: "/trip/results", label: "View demo" },
+  { href: "/saved-trips", label: "Saved trips" },
 ];
 
 export function Footer() {

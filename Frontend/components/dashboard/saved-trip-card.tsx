@@ -38,7 +38,7 @@ export function SavedTripCard({ trip, onDelete }: SavedTripCardProps) {
           {formatCurrency(trip.budget, trip.currency)}
         </p>
         <div className="flex items-center gap-2">
-          <Button className="flex-1" render={<Link href="/results" />}>
+          <Button className="flex-1" render={<Link href="/trip/results" />}>
             Continue
             <ArrowRight data-icon="inline-end" />
           </Button>

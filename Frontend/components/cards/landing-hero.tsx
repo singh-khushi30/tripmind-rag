@@ -50,7 +50,7 @@ export function LandingHero() {
             <Button
               size="lg"
               className="h-12 px-6 text-base"
-              render={<Link href="/plan" />}
+              render={<Link href="/trip/plan" />}
             >
               Plan Your Trip
               <ArrowRight data-icon="inline-end" />
@@ -59,7 +59,7 @@ export function LandingHero() {
               size="lg"
               variant="outline"
               className="h-12 px-6 text-base"
-              render={<Link href="/results" />}
+              render={<Link href="/trip/results" />}
             >
               <Play data-icon="inline-start" />
               View Demo

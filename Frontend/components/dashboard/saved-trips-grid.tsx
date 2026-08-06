@@ -41,7 +41,7 @@ export function SavedTripsGrid({ trips }: SavedTripsGridProps) {
             Your saved itineraries, all in one place.
           </p>
         </div>
-        <Button render={<Link href="/plan" />}>Plan another trip</Button>
+        <Button render={<Link href="/trip/plan" />}>Plan another trip</Button>
       </div>
 
       {items.length === 0 ? (
@@ -50,7 +50,7 @@ export function SavedTripsGrid({ trips }: SavedTripsGridProps) {
           description="When you generate itineraries, they’ll land here as calm, glanceable cards. Start a plan to fill this space."
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <Button render={<Link href="/plan" />}>Plan Your Trip</Button>
+              <Button render={<Link href="/trip/plan" />}>Plan Your Trip</Button>
               <Button
                 variant="outline"
                 onClick={() => setItems(trips)}

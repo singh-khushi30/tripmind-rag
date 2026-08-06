@@ -96,7 +96,7 @@ export function PlannerForm() {
       return;
     }
 
-    router.push("/results");
+    router.push("/trip/results");
   }
 
   return (

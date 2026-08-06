@@ -82,7 +82,7 @@ export function ResultsView({
           onRetry={() => {
             setState("loading");
             window.setTimeout(() => setState("ready"), 1200);
-            router.replace("/results");
+            router.replace("/trip/results");
           }}
         />
       </Container>
