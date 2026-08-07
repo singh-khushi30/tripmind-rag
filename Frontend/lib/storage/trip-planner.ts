@@ -1,3 +1,9 @@
+/**
+ * Legacy browser storage helpers.
+ * Supabase is the primary persistence layer for trips.
+ * These remain only for optional local drafts / migration, not the main flow.
+ */
+
 import { tripPlannerSchema } from "@/lib/validation/trip-planner";
 import type {
   TripPlannerFormValues,

@@ -1,30 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { deleteTripAction } from "@/app/trips/actions";
 import { SavedTripCard } from "@/components/dashboard/saved-trip-card";
 import { Container } from "@/components/layout/container";
-import { DashboardSkeleton } from "@/components/loading/dashboard-skeleton";
 import { EmptyState } from "@/components/states/empty-state";
+import { ErrorState } from "@/components/states/error-state";
 import { Button } from "@/components/ui/button";
 import type { SavedTrip } from "@/types/trip";
 
 type SavedTripsGridProps = {
   trips: SavedTrip[];
+  error?: string | null;
 };
 
-export function SavedTripsGrid({ trips }: SavedTripsGridProps) {
-  const [items, setItems] = useState<SavedTrip[]>(trips);
-  const [loading, setLoading] = useState(true);
+export function SavedTripsGrid({ trips, error = null }: SavedTripsGridProps) {
+  const router = useRouter();
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 900);
-    return () => window.clearTimeout(timer);
-  }, []);
+  const items = trips.filter((trip) => !removedIds.includes(trip.id));
 
-  if (loading) {
-    return <DashboardSkeleton />;
+  function handleDelete(id: string) {
+    setActionError(null);
+    setDeletingId(id);
+
+    startTransition(async () => {
+      const result = await deleteTripAction(id);
+
+      if (result.error) {
+        setActionError(result.error);
+        setDeletingId(null);
+        return;
+      }
+
+      setRemovedIds((current) =>
+        current.includes(id) ? current : [...current, id],
+      );
+      setDeletingId(null);
+      router.refresh();
+    });
+  }
+
+  if (error) {
+    return (
+      <Container className="py-16">
+        <ErrorState
+          title="Couldn’t load saved trips"
+          description={error}
+          onRetry={() => router.refresh()}
+        />
+      </Container>
+    );
   }
 
   return (
@@ -44,21 +76,21 @@ export function SavedTripsGrid({ trips }: SavedTripsGridProps) {
         <Button render={<Link href="/trip/plan" />}>Plan another trip</Button>
       </div>
 
+      {actionError ? (
+        <div
+          role="alert"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
+        >
+          {actionError}
+        </div>
+      ) : null}
+
       {items.length === 0 ? (
         <EmptyState
           title="No trips saved yet"
           description="When you generate itineraries, they’ll land here as calm, glanceable cards. Start a plan to fill this space."
           action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button render={<Link href="/trip/plan" />}>Plan Your Trip</Button>
-              <Button
-                variant="outline"
-                onClick={() => setItems(trips)}
-                disabled={trips.length === 0}
-              >
-                Restore saved trips
-              </Button>
-            </div>
+            <Button render={<Link href="/trip/plan" />}>Plan Your Trip</Button>
           }
         />
       ) : (
@@ -67,9 +99,8 @@ export function SavedTripsGrid({ trips }: SavedTripsGridProps) {
             <SavedTripCard
               key={trip.id}
               trip={trip}
-              onDelete={(id) =>
-                setItems((current) => current.filter((item) => item.id !== id))
-              }
+              deleting={isPending && deletingId === trip.id}
+              onDelete={handleDelete}
             />
           ))}
         </div>

@@ -40,3 +40,14 @@ export function destinationKeyFromId(id: string): DestinationKey | null {
   if (id.includes("marrakech")) return "marrakech";
   return null;
 }
+
+export function resolveDestinationImage(destination: string): DestinationImageConfig {
+  const key = destinationKeyFromId(destination.toLowerCase());
+  if (key) return DESTINATION_IMAGES[key];
+
+  return {
+    src: FALLBACK_TRAVEL_IMAGE,
+    alt: `Travel photo for ${destination}`,
+    fallbackTone: "teal",
+  };
+}

@@ -13,11 +13,10 @@ import { BudgetBreakdown } from "@/components/trip/budget-breakdown";
 import { DayTimeline } from "@/components/trip/day-timeline";
 import { SourcesList } from "@/components/trip/sources-list";
 import { getMockItinerary } from "@/lib/mock-itineraries";
-import { loadTripPlannerSubmission } from "@/lib/storage/trip-planner";
-import { buildTripResult } from "@/lib/trip/build-trip-result";
 import type { TripResult } from "@/types/trip";
 
 type ResultsViewProps = {
+  trip?: TripResult;
   initialState?: "loading" | "ready" | "error";
 };
 
@@ -54,22 +53,23 @@ function getDemoTrip(): TripResult {
 }
 
 export function ResultsView({
+  trip,
   initialState = "loading",
 }: ResultsViewProps) {
   const router = useRouter();
   const [state, setState] = useState<"loading" | "ready" | "error">(
-    initialState,
+    trip ? "ready" : initialState,
   );
 
   useEffect(() => {
-    if (initialState !== "loading") return;
+    if (trip || initialState !== "loading") return;
 
     const timer = window.setTimeout(() => {
       setState("ready");
     }, 1400);
 
     return () => window.clearTimeout(timer);
-  }, [initialState]);
+  }, [initialState, trip]);
 
   if (state === "loading") {
     return <TripResultsSkeleton />;
@@ -89,15 +89,10 @@ export function ResultsView({
     );
   }
 
-  return <ResultsReady />;
+  return <ResultsReady trip={trip ?? getDemoTrip()} />;
 }
 
-function ResultsReady() {
-  const [trip] = useState(() => {
-    const stored = loadTripPlannerSubmission();
-    return stored ? buildTripResult(stored) : getDemoTrip();
-  });
-
+function ResultsReady({ trip }: { trip: TripResult }) {
   return (
     <Container className="space-y-8 py-10">
       <div className="space-y-2">

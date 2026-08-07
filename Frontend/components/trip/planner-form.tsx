@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
@@ -20,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { createTripAction } from "@/app/trips/actions";
 import {
   CURRENCIES,
   FOOD_PREFERENCES,
@@ -27,7 +27,6 @@ import {
   TRAVEL_PACES,
   TRAVEL_STYLES,
 } from "@/data/mock/planner-options";
-import { saveTripPlannerSubmission } from "@/lib/storage/trip-planner";
 import {
   tripPlannerSchema,
   type TripPlannerSchema,
@@ -61,9 +60,8 @@ const RESET_VALUES: TripPlannerFormValues = {
 };
 
 export function PlannerForm() {
-  const router = useRouter();
   const formId = useId();
-  const [storageError, setStorageError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -85,18 +83,12 @@ export function PlannerForm() {
   const specialNotes = useWatch({ control, name: "specialNotes" }) ?? "";
 
   async function onSubmit(values: TripPlannerSchema) {
-    setStorageError(null);
+    setSubmitError(null);
 
-    // Brief loading state so the submit UX feels intentional.
-    await new Promise((resolve) => window.setTimeout(resolve, 700));
-
-    const result = saveTripPlannerSubmission(values);
-    if (!result.ok) {
-      setStorageError(result.error);
-      return;
+    const result = await createTripAction(values);
+    if (result?.error) {
+      setSubmitError(result.error);
     }
-
-    router.push("/trip/results");
   }
 
   return (
@@ -104,15 +96,15 @@ export function PlannerForm() {
       onSubmit={handleSubmit(onSubmit)}
       className="surface-card space-y-8 p-6 sm:p-8"
       noValidate
-      aria-describedby={storageError ? `${formId}-storage-error` : undefined}
+      aria-describedby={submitError ? `${formId}-submit-error` : undefined}
     >
-      {storageError ? (
+      {submitError ? (
         <div
-          id={`${formId}-storage-error`}
+          id={`${formId}-submit-error`}
           role="alert"
           className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
         >
-          {storageError}
+          {submitError}
         </div>
       ) : null}
 
@@ -467,7 +459,7 @@ export function PlannerForm() {
           size="lg"
           disabled={isSubmitting}
           onClick={() => {
-            setStorageError(null);
+            setSubmitError(null);
             reset(RESET_VALUES);
           }}
         >

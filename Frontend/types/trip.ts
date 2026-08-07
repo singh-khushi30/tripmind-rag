@@ -88,6 +88,7 @@ export type SavedTrip = {
   budget: number;
   currency: Currency;
   days: number;
-  coverTone: "teal" | "slate" | "sand" | "mist";
-  imageKey: "kyoto" | "lisbon" | "reykjavik" | "marrakech";
+  status?: string;
+  coverTone?: "teal" | "slate" | "sand" | "mist";
+  imageKey?: "kyoto" | "lisbon" | "reykjavik" | "marrakech";
 };

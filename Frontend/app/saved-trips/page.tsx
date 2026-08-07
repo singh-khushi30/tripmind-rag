@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
-import savedTrips from "@/data/mock/saved-trips.json";
 import { SavedTripsGrid } from "@/components/dashboard/saved-trips-grid";
+import { tripToSavedTripCard } from "@/lib/trips/mappers";
+import { listUserTrips } from "@/lib/trips/queries";
 import type { SavedTrip } from "@/types/trip";
 
 export const metadata: Metadata = {
@@ -9,6 +10,19 @@ export const metadata: Metadata = {
   description: "Browse and manage your saved TripMind itineraries.",
 };
 
-export default function SavedTripsPage() {
-  return <SavedTripsGrid trips={savedTrips as SavedTrip[]} />;
+export default async function SavedTripsPage() {
+  let trips: SavedTrip[] = [];
+  let error: string | null = null;
+
+  try {
+    const rows = await listUserTrips();
+    trips = rows.map(tripToSavedTripCard);
+  } catch (err) {
+    error =
+      err instanceof Error
+        ? err.message
+        : "We couldn’t load your saved trips. Please try again.";
+  }
+
+  return <SavedTripsGrid trips={trips} error={error} />;
 }
