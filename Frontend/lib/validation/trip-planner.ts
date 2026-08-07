@@ -20,6 +20,13 @@ const foodPreferenceEnum = z.enum([
   "local",
 ]);
 
+const destinationScopeEnum = z.enum([
+  "city",
+  "region",
+  "country",
+  "multi_city",
+]);
+
 export const tripPlannerSchema = z.object({
   destination: z
     .string()
@@ -45,9 +52,7 @@ export const tripPlannerSchema = z.object({
   travelStyle: z.enum(["luxury", "mid-range", "budget", "backpacking"], {
     error: "Travel style is required",
   }),
-  interests: z
-    .array(interestEnum)
-    .min(1, "Choose at least one interest"),
+  interests: z.array(interestEnum).min(1, "Choose at least one interest"),
   pace: z.enum(["relaxed", "moderate", "packed"], {
     error: "Travel pace is required",
   }),
@@ -56,6 +61,10 @@ export const tripPlannerSchema = z.object({
     .string()
     .max(500, "Special notes cannot exceed 500 characters")
     .optional(),
+  destinationScope: destinationScopeEnum,
+  selectedCities: z.array(z.string().trim().min(1)),
+  includeAccommodationInBudget: z.boolean(),
+  includeTransportToDestinationInBudget: z.boolean(),
 });
 
 export type TripPlannerSchema = z.infer<typeof tripPlannerSchema>;

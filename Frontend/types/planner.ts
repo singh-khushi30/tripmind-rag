@@ -1,3 +1,4 @@
+import type { DestinationScope } from "@/lib/destinations/broad-destination";
 import type {
   Currency,
   FoodPreference,
@@ -17,6 +18,10 @@ export type TripPlannerFormValues = {
   pace: TravelPace;
   foodPreference?: FoodPreference;
   specialNotes?: string;
+  destinationScope: DestinationScope;
+  selectedCities: string[];
+  includeAccommodationInBudget: boolean;
+  includeTransportToDestinationInBudget: boolean;
 };
 
 export type TripPlannerStoragePayload = {

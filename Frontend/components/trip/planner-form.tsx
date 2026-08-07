@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
@@ -8,7 +8,10 @@ import { LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
 import { FormField } from "@/components/forms/form-field";
 import { InterestChipGroup } from "@/components/forms/interest-chip-group";
 import { StyleOptionGroup } from "@/components/forms/style-option-group";
+import { DestinationClarification } from "@/components/trip/destination-clarification";
+import { GenerationStatus } from "@/components/trip/generation-status";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,6 +31,13 @@ import {
   TRAVEL_STYLES,
 } from "@/data/mock/planner-options";
 import {
+  analyzeDestination,
+  requiresDestinationClarification,
+  type DestinationAnalysis,
+  type DestinationSuggestion,
+} from "@/lib/destinations/broad-destination";
+import { isNextRedirectError } from "@/lib/next/errors";
+import {
   tripPlannerSchema,
   type TripPlannerSchema,
 } from "@/lib/validation/trip-planner";
@@ -44,6 +54,10 @@ const DEFAULT_VALUES: TripPlannerFormValues = {
   pace: "moderate",
   foodPreference: "local",
   specialNotes: "Prefer quieter mornings and walkable neighborhoods.",
+  destinationScope: "city",
+  selectedCities: [],
+  includeAccommodationInBudget: false,
+  includeTransportToDestinationInBudget: false,
 };
 
 const RESET_VALUES: TripPlannerFormValues = {
@@ -57,11 +71,19 @@ const RESET_VALUES: TripPlannerFormValues = {
   pace: "moderate",
   foodPreference: undefined,
   specialNotes: "",
+  destinationScope: "city",
+  selectedCities: [],
+  includeAccommodationInBudget: false,
+  includeTransportToDestinationInBudget: false,
 };
 
 export function PlannerForm() {
   const formId = useId();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [clarification, setClarification] =
+    useState<DestinationAnalysis | null>(null);
 
   const {
     register,
@@ -69,6 +91,7 @@ export function PlannerForm() {
     handleSubmit,
     reset,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<TripPlannerSchema>({
     resolver: zodResolver(tripPlannerSchema),
@@ -81,14 +104,105 @@ export function PlannerForm() {
   const days = useWatch({ control, name: "days" }) ?? 5;
   const budget = useWatch({ control, name: "budget" }) ?? 0;
   const specialNotes = useWatch({ control, name: "specialNotes" }) ?? "";
+  const includeAccommodation =
+    useWatch({ control, name: "includeAccommodationInBudget" }) ?? false;
+  const includeTransport =
+    useWatch({ control, name: "includeTransportToDestinationInBudget" }) ??
+    false;
+  const destinationScope =
+    useWatch({ control, name: "destinationScope" }) ?? "city";
+  const selectedCities = useWatch({ control, name: "selectedCities" }) ?? [];
+  const busy = isSubmitting || isGenerating || isPending;
 
-  async function onSubmit(values: TripPlannerSchema) {
+  function applyDestinationSuggestion(suggestion: DestinationSuggestion) {
+    if (suggestion.scope === "city" && suggestion.label.startsWith("Choose")) {
+      setClarification(null);
+      setSubmitError("Enter a specific city in the destination field.");
+      return;
+    }
+
+    if (
+      suggestion.scope === "region" &&
+      suggestion.label.startsWith("Focus on")
+    ) {
+      setClarification(null);
+      setSubmitError("Enter a smaller region in the destination field.");
+      return;
+    }
+
+    if (
+      suggestion.scope === "multi_city" &&
+      suggestion.label.startsWith("Plan a multi-city") &&
+      !suggestion.cities?.length
+    ) {
+      setClarification(null);
+      setSubmitError(
+        "Enter the cities you want to visit, or pick a multi-city suggestion with named cities.",
+      );
+      return;
+    }
+
+    const nextDestination =
+      suggestion.scope === "multi_city" && suggestion.cities?.length
+        ? suggestion.cities.join(" → ")
+        : suggestion.label;
+
+    setValue("destination", nextDestination, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("destinationScope", suggestion.scope, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("selectedCities", suggestion.cities ?? [], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setClarification(null);
+    setSubmitError(null);
+  }
+
+  function onSubmit(values: TripPlannerSchema) {
+    if (busy) return;
+
     setSubmitError(null);
 
-    const result = await createTripAction(values);
-    if (result?.error) {
-      setSubmitError(result.error);
+    if (
+      requiresDestinationClarification(
+        values.destination,
+        values.destinationScope,
+      )
+    ) {
+      setClarification(analyzeDestination(values.destination));
+      setSubmitError(
+        "This destination is too broad. Choose a city, region, or multi-city plan below.",
+      );
+      return;
     }
+
+    setIsGenerating(true);
+
+    startTransition(async () => {
+      try {
+        const result = await createTripAction(values);
+        if (result?.error) {
+          setSubmitError(result.error);
+          setIsGenerating(false);
+        }
+        // Successful redirects never return — keep the generating state until navigation.
+      } catch (error) {
+        // redirect() from the server action throws NEXT_REDIRECT; that is success, not failure.
+        if (isNextRedirectError(error)) {
+          return;
+        }
+
+        setSubmitError(
+          "We couldn’t generate your itinerary right now. Please try again.",
+        );
+        setIsGenerating(false);
+      }
+    });
   }
 
   return (
@@ -96,8 +210,11 @@ export function PlannerForm() {
       onSubmit={handleSubmit(onSubmit)}
       className="surface-card space-y-8 p-6 sm:p-8"
       noValidate
+      aria-busy={busy}
       aria-describedby={submitError ? `${formId}-submit-error` : undefined}
     >
+      <GenerationStatus active={busy} />
+
       {submitError ? (
         <div
           id={`${formId}-submit-error`}
@@ -125,13 +242,37 @@ export function PlannerForm() {
             aria-describedby={
               errors.destination ? `${formId}-destination-error` : undefined
             }
-            {...register("destination")}
+            {...register("destination", {
+              onChange: () => {
+                setClarification(null);
+                setValue("destinationScope", "city");
+                setValue("selectedCities", []);
+              },
+            })}
           />
+          {(destinationScope !== "city" || selectedCities.length > 0) && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              Scope: {destinationScope.replace("_", " ")}
+              {selectedCities.length
+                ? ` · Cities: ${selectedCities.join(", ")}`
+                : null}
+            </p>
+          )}
         </FormField>
+
+        {clarification ? (
+          <div className="md:col-span-2">
+            <DestinationClarification
+              analysis={clarification}
+              onSelect={applyDestinationSuggestion}
+              onDismiss={() => setClarification(null)}
+            />
+          </div>
+        ) : null}
 
         <FormField
           id={`${formId}-days`}
-          label={`Number of days · ${days}`}
+          label={`Number of days · ${Number.isFinite(days) ? days : "—"}`}
           error={errors.days?.message}
           required
         >
@@ -143,10 +284,12 @@ export function PlannerForm() {
                 <Slider
                   min={1}
                   max={14}
-                  value={[field.value]}
+                  value={[Number.isFinite(field.value) ? field.value : 1]}
                   onValueChange={(value) => {
                     const next = Array.isArray(value) ? value[0] : value;
-                    field.onChange(next ?? 1);
+                    field.onChange(
+                      Number.isFinite(next) ? Number(next) : 1,
+                    );
                   }}
                   aria-label="Number of days"
                 />
@@ -156,7 +299,7 @@ export function PlannerForm() {
                   min={1}
                   max={14}
                   className="h-11"
-                  value={field.value}
+                  value={Number.isFinite(field.value) ? field.value : ""}
                   onChange={(event) => {
                     const raw = event.target.value;
                     field.onChange(raw === "" ? NaN : Number(raw));
@@ -187,10 +330,16 @@ export function PlannerForm() {
                   min={1}
                   max={15000}
                   step={50}
-                  value={[Math.max(field.value || 1, 1)]}
+                  value={[
+                    Number.isFinite(field.value)
+                      ? Math.max(field.value, 1)
+                      : 1,
+                  ]}
                   onValueChange={(value) => {
                     const next = Array.isArray(value) ? value[0] : value;
-                    field.onChange(next ?? 1);
+                    field.onChange(
+                      Number.isFinite(next) ? Number(next) : 1,
+                    );
                   }}
                   aria-label="Budget amount"
                 />
@@ -434,15 +583,87 @@ export function PlannerForm() {
         />
       </FormField>
 
+      <section className="border-border/70 space-y-4 rounded-2xl border px-4 py-4">
+        <div>
+          <h3 className="text-foreground text-sm font-medium">
+            What your budget covers
+          </h3>
+          <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+            Costs are approximate estimates in {getValues("currency")}. Live
+            exchange rates are not applied.
+          </p>
+        </div>
+
+        <ul className="text-muted-foreground space-y-1 text-sm">
+          <li>Food & dining — included</li>
+          <li>Activities & attractions — included</li>
+          <li>Local transportation — included</li>
+          <li>
+            Accommodation —{" "}
+            {includeAccommodation ? "included" : "not included"}
+          </li>
+          <li>
+            Flights / long-distance transport to destination —{" "}
+            {includeTransport ? "included" : "not included"}
+          </li>
+        </ul>
+
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 text-sm">
+            <Controller
+              control={control}
+              name="includeAccommodationInBudget"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked === true)
+                  }
+                  className="mt-0.5"
+                />
+              )}
+            />
+            <span>
+              Include accommodation in this budget
+              <span className="text-muted-foreground mt-0.5 block text-xs">
+                Leave unchecked if lodging is booked separately.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 text-sm">
+            <Controller
+              control={control}
+              name="includeTransportToDestinationInBudget"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked === true)
+                  }
+                  className="mt-0.5"
+                />
+              )}
+            />
+            <span>
+              Include flights or long-distance transport to the destination
+              <span className="text-muted-foreground mt-0.5 block text-xs">
+                Local transit stays included either way.
+              </span>
+            </span>
+          </label>
+        </div>
+      </section>
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={busy}
           className="h-12 flex-1 text-base"
           size="lg"
-          aria-busy={isSubmitting}
+          aria-busy={busy}
         >
-          {isSubmitting ? (
+          {busy ? (
             <LoaderCircle
               data-icon="inline-start"
               className="animate-spin"
@@ -450,16 +671,18 @@ export function PlannerForm() {
           ) : (
             <Sparkles data-icon="inline-start" />
           )}
-          {isSubmitting ? "Generating trip…" : "Generate Trip"}
+          {busy ? "Generating trip…" : "Generate Trip"}
         </Button>
         <Button
           type="button"
           variant="outline"
           className="h-12 sm:w-40"
           size="lg"
-          disabled={isSubmitting}
+          disabled={busy}
           onClick={() => {
+            if (busy) return;
             setSubmitError(null);
+            setClarification(null);
             reset(RESET_VALUES);
           }}
         >

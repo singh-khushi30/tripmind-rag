@@ -69,9 +69,9 @@ export const CURRENCIES: { value: Currency; label: string }[] = [
 
 export const FEATURES = [
   {
-    title: "Source-grounded plans",
+    title: "Budget-aware plans",
     description:
-      "Every stop cites guides, reviews, and official notes — so recommendations feel trustworthy, not invented.",
+      "Personalized AI itineraries that balance food, activities, and local transit around your budget.",
     icon: "Sparkles",
   },
   {
@@ -103,9 +103,9 @@ export const HOW_IT_WORKS = [
   },
   {
     step: "02",
-    title: "Review a grounded plan",
+    title: "Review your AI itinerary",
     description:
-      "See a day timeline with costs, categories, and the sources behind each suggestion.",
+      "See a day timeline with estimated costs, categories, and pacing matched to your style.",
   },
   {
     step: "03",

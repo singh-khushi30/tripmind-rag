@@ -1,38 +1,15 @@
+import type { ItineraryData } from "@/lib/gemini/schema";
 import type {
-  BudgetBreakdownItem,
   Currency,
   FoodPreference,
   Interest,
   TravelPace,
   TravelStyle,
-  TripActivity,
-  TripDay,
-  TripMapMarker,
-  TripSource,
 } from "@/types/trip";
 
-export type { TripActivity, TripDay };
+export type { ItineraryData };
 
 export type TripStatus = "draft" | "generated" | "updated" | "completed";
-
-export type ItineraryData = {
-  summary: string;
-  country: string;
-  budget: {
-    total: number;
-    currency: Currency;
-    perPerson: number;
-    breakdown: BudgetBreakdownItem[];
-  };
-  days: TripDay[];
-  sources: TripSource[];
-  map: {
-    label: string;
-    lat: number;
-    lng: number;
-    markers?: TripMapMarker[];
-  };
-};
 
 export type Trip = {
   id: string;

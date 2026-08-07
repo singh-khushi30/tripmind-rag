@@ -1,4 +1,4 @@
-import type { Currency, TripDay, TripSource } from "@/types/trip";
+import type { Currency, MockTripDay, TripSource } from "@/types/trip";
 
 export type MapMarker = {
   x: number;
@@ -18,7 +18,7 @@ export type MockItineraryResult = {
     markers: MapMarker[];
   };
   sources: TripSource[];
-  itinerary: TripDay[];
+  itinerary: MockTripDay[];
 };
 
 type DestinationMock = {
@@ -1595,7 +1595,7 @@ function toTripDays(
   days: number,
   currency: Currency,
   destinationKey: string,
-): TripDay[] {
+): MockTripDay[] {
   const count = Math.max(1, Math.min(14, days));
 
   return Array.from({ length: count }, (_, index) => {
@@ -1628,7 +1628,7 @@ function buildGenericItinerary(
   placeName: string,
   days: number,
   currency: Currency,
-): TripDay[] {
+): MockTripDay[] {
   const count = Math.max(1, Math.min(14, days));
 
   return Array.from({ length: count }, (_, index) => {

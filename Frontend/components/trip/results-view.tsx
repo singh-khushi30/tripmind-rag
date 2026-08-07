@@ -9,10 +9,8 @@ import { Container } from "@/components/layout/container";
 import { TripResultsSkeleton } from "@/components/loading/trip-results-skeleton";
 import { MapPlaceholder } from "@/components/map/map-placeholder";
 import { ErrorState } from "@/components/states/error-state";
-import { BudgetBreakdown } from "@/components/trip/budget-breakdown";
 import { DayTimeline } from "@/components/trip/day-timeline";
-import { SourcesList } from "@/components/trip/sources-list";
-import { getMockItinerary } from "@/lib/mock-itineraries";
+import type { ItineraryData } from "@/lib/gemini/schema";
 import type { TripResult } from "@/types/trip";
 
 type ResultsViewProps = {
@@ -21,34 +19,76 @@ type ResultsViewProps = {
 };
 
 function getDemoTrip(): TripResult {
-  const mock = getMockItinerary("Kyoto, Japan", 5, "USD");
+  const itinerary: ItineraryData = {
+    destination: "Kyoto",
+    country: "Japan",
+    summary:
+      "A calm, culture-rich Kyoto itinerary balancing temples, seasonal gardens, and neighborhood food walks.",
+    currency: "USD",
+    estimated_total_cost: 1450,
+    budget_status: "within_budget",
+    days: [
+      {
+        day_number: 1,
+        title: "Temples and quiet lanes",
+        summary: "Ease into Kyoto with classic temple walks and a local lunch.",
+        estimated_day_cost: 180,
+        activities: [
+          {
+            start_time: "09:00",
+            title: "Morning at Kiyomizu-dera",
+            description:
+              "Start with hillside temple views and a stroll through nearby pottery streets.",
+            category: "Culture",
+            estimated_cost: 10,
+            duration_minutes: 120,
+            location_name: "Kiyomizu-dera",
+            neighborhood: "Higashiyama",
+            indoor_outdoor: "outdoor",
+            reservation_required: false,
+            notes: null,
+          },
+          {
+            start_time: "12:30",
+            title: "Neighborhood lunch",
+            description:
+              "Take a relaxed lunch break with local dishes near the temple approach.",
+            category: "Food",
+            estimated_cost: 25,
+            duration_minutes: 75,
+            location_name: "Higashiyama lunch street",
+            neighborhood: "Higashiyama",
+            indoor_outdoor: "indoor",
+            reservation_required: false,
+            notes: "Confirm dietary needs on arrival.",
+          },
+        ],
+      },
+    ],
+  };
 
   return {
     id: "trip_demo_kyoto",
-    destination: mock.destinationLabel,
-    country: mock.country,
-    summary:
-      "A calm, culture-rich Kyoto itinerary balancing temples, seasonal gardens, and neighborhood food walks.",
-    days: 5,
+    destination: itinerary.destination,
+    country: itinerary.country,
+    summary: itinerary.summary,
+    days: 1,
     travelers: 2,
     travelStyle: "mid-range",
     pace: "moderate",
-    interests: ["culture", "food", "photography", "history", "nature"],
+    interests: ["culture", "food", "photography"],
     budget: {
       total: 3200,
       currency: "USD",
-      perPerson: 1600,
-      breakdown: [
-        { category: "Stay", amount: 1100, percentage: 34 },
-        { category: "Food", amount: 720, percentage: 23 },
-        { category: "Activities", amount: 540, percentage: 17 },
-        { category: "Transport", amount: 480, percentage: 15 },
-        { category: "Shopping", amount: 360, percentage: 11 },
-      ],
+      estimatedTotalCost: itinerary.estimated_total_cost,
+      budgetStatus: itinerary.budget_status,
+      perPerson: Math.round(itinerary.estimated_total_cost / 2),
+      remainingBudget: 3200 - itinerary.estimated_total_cost,
+      percentageUsed: (itinerary.estimated_total_cost / 3200) * 100,
+      conversionStatus: "not_required",
+      destinationLocalCurrency: "JPY",
     },
-    itinerary: mock.itinerary,
-    sources: mock.sources,
-    map: mock.map,
+    itinerary: itinerary.days,
   };
 }
 
@@ -108,25 +148,23 @@ function ResultsReady({ trip }: { trip: TripResult }) {
         </p>
       </div>
 
+      <div
+        role="note"
+        className="border-border/80 bg-secondary/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm leading-relaxed"
+      >
+        This itinerary is AI-generated. Prices, timings, and availability are
+        estimates and should be verified before booking.
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <TripSummaryCard trip={trip} />
         <BudgetCard trip={trip} />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-        <DayTimeline days={trip.itinerary} />
+        <DayTimeline days={trip.itinerary} currency={trip.budget.currency} />
         <aside className="space-y-4 lg:sticky lg:top-24">
-          <MapPlaceholder
-            label={trip.map.label}
-            lat={trip.map.lat}
-            lng={trip.map.lng}
-            markers={trip.map.markers}
-          />
-          <BudgetBreakdown
-            items={trip.budget.breakdown}
-            currency={trip.budget.currency}
-          />
-          <SourcesList sources={trip.sources} />
+          <MapPlaceholder label={trip.destination} />
         </aside>
       </div>
     </Container>

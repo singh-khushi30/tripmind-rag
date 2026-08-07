@@ -2,6 +2,19 @@ import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 
 import { cn } from "@/lib/utils";
 
+function sanitizeSliderValues(
+  values: number[] | undefined,
+  min: number,
+  max: number,
+) {
+  if (!values?.length) return undefined;
+
+  return values.map((value) => {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
+  });
+}
+
 function Slider({
   className,
   defaultValue,
@@ -10,18 +23,24 @@ function Slider({
   max = 100,
   ...props
 }: SliderPrimitive.Root.Props) {
-  const _values = Array.isArray(value)
-    ? value
-    : Array.isArray(defaultValue)
-      ? defaultValue
-      : [min, max];
+  const safeValue = sanitizeSliderValues(
+    Array.isArray(value) ? value : undefined,
+    min,
+    max,
+  );
+  const safeDefaultValue = sanitizeSliderValues(
+    Array.isArray(defaultValue) ? defaultValue : undefined,
+    min,
+    max,
+  );
+  const _values = safeValue ?? safeDefaultValue ?? [min, max];
 
   return (
     <SliderPrimitive.Root
       className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
+      defaultValue={safeDefaultValue}
+      value={safeValue}
       min={min}
       max={max}
       thumbAlignment="edge"

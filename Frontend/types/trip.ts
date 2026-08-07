@@ -1,3 +1,11 @@
+import type {
+  BudgetStatus,
+  ConversionStatus,
+  ItineraryActivity,
+  ItineraryData,
+  ItineraryDay,
+} from "@/lib/gemini/schema";
+
 export type TravelStyle = "luxury" | "mid-range" | "budget" | "backpacking";
 
 export type TravelPace = "relaxed" | "moderate" | "packed";
@@ -13,11 +21,31 @@ export type Interest =
   | "history";
 
 export type FoodPreference =
-  "any" | "vegetarian" | "vegan" | "halal" | "kosher" | "local";
+  | "any"
+  | "vegetarian"
+  | "vegan"
+  | "halal"
+  | "kosher"
+  | "local";
 
 export type Currency = "USD" | "EUR" | "GBP" | "INR" | "JPY";
 
-export type TripActivity = {
+export type {
+  BudgetStatus,
+  ConversionStatus,
+  ItineraryActivity,
+  ItineraryData,
+  ItineraryDay,
+};
+
+/** @deprecated Prefer ItineraryActivity — kept as alias for UI components. */
+export type TripActivity = ItineraryActivity;
+
+/** @deprecated Prefer ItineraryDay — kept as alias for UI components. */
+export type TripDay = ItineraryDay;
+
+/** Legacy mock activity shape used by destination mock data only. */
+export type MockTripActivity = {
   id: string;
   time: string;
   title: string;
@@ -29,11 +57,12 @@ export type TripActivity = {
   source: string;
 };
 
-export type TripDay = {
+/** Legacy mock day shape used by destination mock data only. */
+export type MockTripDay = {
   day: number;
   title: string;
   dateLabel: string;
-  activities: TripActivity[];
+  activities: MockTripActivity[];
 };
 
 export type BudgetBreakdownItem = {
@@ -58,7 +87,7 @@ export type TripMapMarker = {
 export type TripResult = {
   id: string;
   destination: string;
-  country: string;
+  country: string | null;
   summary: string;
   days: number;
   travelers: number;
@@ -68,17 +97,15 @@ export type TripResult = {
   budget: {
     total: number;
     currency: Currency;
+    estimatedTotalCost: number;
+    budgetStatus: BudgetStatus;
     perPerson: number;
-    breakdown: BudgetBreakdownItem[];
+    remainingBudget?: number;
+    percentageUsed?: number;
+    conversionStatus?: ConversionStatus;
+    destinationLocalCurrency?: string | null;
   };
-  itinerary: TripDay[];
-  sources: TripSource[];
-  map: {
-    label: string;
-    lat: number;
-    lng: number;
-    markers?: TripMapMarker[];
-  };
+  itinerary: ItineraryDay[];
 };
 
 export type SavedTrip = {

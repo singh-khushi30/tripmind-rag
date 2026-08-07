@@ -4,16 +4,17 @@ export type {
 } from "./planner";
 
 export type {
-  BudgetBreakdownItem,
+  BudgetStatus,
   Currency,
   FoodPreference,
   Interest,
+  ItineraryActivity,
+  ItineraryData,
+  ItineraryDay,
   SavedTrip,
   TravelPace,
   TravelStyle,
   TripActivity,
   TripDay,
-  TripMapMarker,
   TripResult,
-  TripSource,
 } from "./trip";

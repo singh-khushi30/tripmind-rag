@@ -17,7 +17,7 @@ export function Footer() {
             TripMind
           </p>
           <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">
-            Premium AI travel planning with calm, source-grounded itineraries.
+            Personalized AI travel planning with budget-aware itineraries.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">

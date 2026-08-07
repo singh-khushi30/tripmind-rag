@@ -1,3 +1,8 @@
+/**
+ * Legacy helper retained for older mock-result tooling.
+ * Production trip creation uses Gemini via generateTripItinerary.
+ */
+
 import { getMockItinerary } from "@/lib/mock-itineraries";
 import type { TripPlannerFormValues } from "@/types/planner";
 import type { BudgetBreakdownItem, TripResult } from "@/types/trip";
@@ -10,23 +15,6 @@ const DEFAULT_BREAKDOWN: Array<Omit<BudgetBreakdownItem, "amount">> = [
   { category: "Shopping", percentage: 11 },
 ];
 
-function buildSummary(
-  form: TripPlannerFormValues,
-  destinationLabel: string,
-  isGeneric: boolean,
-) {
-  const style = form.travelStyle.replace("-", " ");
-  const interestLabel = form.interests.slice(0, 3).join(", ");
-  const notes = form.specialNotes?.trim();
-
-  const base = isGeneric
-    ? `A temporary mock itinerary for ${destinationLabel} across ${form.days} days — ${form.pace} pace, ${style} style, shaped around ${interestLabel}${form.interests.length > 3 ? ", and more" : ""}. Destination-specific activities will replace this preview later.`
-    : `A ${form.pace}, ${style} plan for ${destinationLabel} across ${form.days} days — shaped around ${interestLabel}${form.interests.length > 3 ? ", and more" : ""}.`;
-
-  if (!notes) return base;
-  return `${base} Traveler notes: ${notes}`;
-}
-
 function buildBudgetBreakdown(total: number): BudgetBreakdownItem[] {
   return DEFAULT_BREAKDOWN.map((item) => ({
     ...item,
@@ -35,17 +23,14 @@ function buildBudgetBreakdown(total: number): BudgetBreakdownItem[] {
 }
 
 export function buildTripResult(form: TripPlannerFormValues): TripResult {
-  const mock = getMockItinerary(
-    form.destination,
-    form.days,
-    form.currency,
-  );
+  const mock = getMockItinerary(form.destination, form.days, form.currency);
+  const estimatedTotalCost = form.budget;
 
   return {
     id: `trip_${mock.key}_${form.days}d`,
     destination: mock.destinationLabel,
-    country: mock.country,
-    summary: buildSummary(form, mock.destinationLabel, mock.isGeneric),
+    country: mock.country || null,
+    summary: `A ${form.pace}, ${form.travelStyle.replace("-", " ")} plan for ${mock.destinationLabel}.`,
     days: form.days,
     travelers: form.travelers,
     travelStyle: form.travelStyle,
@@ -54,16 +39,35 @@ export function buildTripResult(form: TripPlannerFormValues): TripResult {
     budget: {
       total: form.budget,
       currency: form.currency,
+      estimatedTotalCost,
+      budgetStatus: "within_budget",
       perPerson: Math.round(form.budget / form.travelers),
-      breakdown: buildBudgetBreakdown(form.budget),
     },
-    itinerary: mock.itinerary,
-    sources: mock.sources,
-    map: {
-      label: mock.map.label,
-      lat: mock.map.lat,
-      lng: mock.map.lng,
-      markers: mock.map.markers,
-    },
+    itinerary: mock.itinerary.map((day) => ({
+      day_number: day.day,
+      title: day.title,
+      summary: day.dateLabel,
+      estimated_day_cost: day.activities.reduce(
+        (sum, activity) => sum + activity.estimatedCost,
+        0,
+      ),
+      activities: day.activities.map((activity) => ({
+        start_time: activity.time,
+        title: activity.title,
+        description: activity.description,
+        category: activity.category,
+        estimated_cost: activity.estimatedCost,
+        duration_minutes: 90,
+        location_name: activity.title,
+        neighborhood: null,
+        indoor_outdoor: "mixed" as const,
+        reservation_required: false,
+        notes: null,
+      })),
+    })),
   };
+}
+
+export function legacyBudgetBreakdown(total: number): BudgetBreakdownItem[] {
+  return buildBudgetBreakdown(total);
 }

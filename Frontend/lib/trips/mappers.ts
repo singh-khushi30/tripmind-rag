@@ -1,37 +1,48 @@
-import type { ItineraryData, Trip } from "@/types/database";
+import { itineraryDataSchema } from "@/lib/gemini/schema";
+import type { TripPlannerInput } from "@/lib/gemini/types";
+import type { Trip } from "@/types/database";
 import type { TripPlannerFormValues } from "@/types/planner";
 import type { Currency, TripResult } from "@/types/trip";
-import { buildTripResult } from "@/lib/trip/build-trip-result";
 
-export function buildItineraryData(
+export function toTripPlannerInput(
   form: TripPlannerFormValues,
-): ItineraryData {
-  const result = buildTripResult(form);
-
+  startDate?: string | null,
+): TripPlannerInput {
   return {
-    summary: result.summary,
-    country: result.country,
-    budget: result.budget,
-    days: result.itinerary,
-    sources: result.sources,
-    map: {
-      label: result.map.label,
-      lat: result.map.lat,
-      lng: result.map.lng,
-      markers: result.map.markers,
-    },
+    destination: form.destination.trim(),
+    start_date: startDate ?? null,
+    number_of_days: form.days,
+    budget: form.budget,
+    currency: form.currency,
+    travelers: form.travelers,
+    travel_style: form.travelStyle,
+    travel_pace: form.pace,
+    interests: form.interests,
+    food_preference: form.foodPreference ?? null,
+    special_notes: form.specialNotes?.trim() ? form.specialNotes.trim() : null,
+    destination_scope: form.destinationScope,
+    selected_cities: form.selectedCities ?? [],
+    include_accommodation_in_budget: form.includeAccommodationInBudget,
+    include_transport_to_destination_in_budget:
+      form.includeTransportToDestinationInBudget,
   };
 }
 
 export function tripToTripResult(trip: Trip): TripResult {
-  const data = trip.itinerary_data;
-  const currency = (trip.currency || data.budget.currency || "USD") as Currency;
+  const parsed = itineraryDataSchema.safeParse(trip.itinerary_data);
+  const data = parsed.success ? parsed.data : null;
+  const currency = (trip.currency ||
+    data?.display_currency ||
+    data?.currency ||
+    "USD") as Currency;
+  const estimatedTotalCost = data?.estimated_total_cost ?? Number(trip.budget);
+  const totals = data?.budget_totals;
 
   return {
     id: trip.id,
-    destination: trip.destination,
-    country: data.country ?? "",
-    summary: data.summary,
+    destination: data?.destination || trip.destination,
+    country: data?.country ?? null,
+    summary: data?.summary ?? "Saved TripMind itinerary.",
     days: trip.number_of_days,
     travelers: trip.travelers,
     travelStyle: trip.travel_style,
@@ -40,19 +51,17 @@ export function tripToTripResult(trip: Trip): TripResult {
     budget: {
       total: Number(trip.budget),
       currency,
+      estimatedTotalCost,
+      budgetStatus: data?.budget_status ?? "within_budget",
       perPerson:
-        data.budget?.perPerson ??
-        Math.round(Number(trip.budget) / Math.max(trip.travelers, 1)),
-      breakdown: data.budget?.breakdown ?? [],
+        totals?.cost_per_traveler ??
+        Math.round(estimatedTotalCost / Math.max(trip.travelers, 1)),
+      remainingBudget: totals?.remaining_budget,
+      percentageUsed: totals?.percentage_used,
+      conversionStatus: data?.conversion_status ?? "unavailable",
+      destinationLocalCurrency: data?.destination_local_currency ?? null,
     },
-    itinerary: data.days ?? [],
-    sources: data.sources ?? [],
-    map: {
-      label: data.map?.label ?? trip.destination,
-      lat: data.map?.lat ?? 0,
-      lng: data.map?.lng ?? 0,
-      markers: data.map?.markers,
-    },
+    itinerary: data?.days ?? [],
   };
 }
 

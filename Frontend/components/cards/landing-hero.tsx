@@ -40,8 +40,8 @@ export function LandingHero() {
             variants={fadeUp}
             className="text-muted-foreground mt-5 max-w-xl text-base leading-relaxed text-pretty sm:text-lg"
           >
-            Create personalized, source-grounded itineraries with realistic
-            budgets, thoughtful pacing, and trusted travel insights.
+            Personalized AI travel planning with budget-aware itineraries,
+            thoughtful pacing, and realistic day-by-day plans.
           </motion.p>
           <motion.div
             variants={fadeUp}

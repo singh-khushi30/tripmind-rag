@@ -3,8 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requiresDestinationClarification } from "@/lib/destinations/broad-destination";
+import {
+  logTripGenerationFailure,
+  toUserFacingTripError,
+  TripGenerationError,
+} from "@/lib/gemini/errors";
+import { generateTripItinerary } from "@/lib/gemini/generate-itinerary";
 import { createClient } from "@/lib/supabase/server";
-import { buildItineraryData } from "@/lib/trips/mappers";
+import { toTripPlannerInput } from "@/lib/trips/mappers";
 import { tripPlannerSchema } from "@/lib/validation/trip-planner";
 import type { TripStatus } from "@/types/database";
 import type { TripPlannerFormValues } from "@/types/planner";
@@ -20,7 +27,8 @@ export async function createTripAction(
 
   if (!parsed.success) {
     return {
-      error: parsed.error.issues[0]?.message ?? "Invalid trip details.",
+      error:
+        "Your trip preferences could not be processed. Review the form and try again.",
     };
   }
 
@@ -31,11 +39,32 @@ export async function createTripAction(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { error: "You must be signed in to save a trip." };
+    return { error: "You must be signed in to generate a trip." };
   }
 
   const values = parsed.data;
-  const itinerary_data = buildItineraryData(values);
+
+  if (
+    requiresDestinationClarification(
+      values.destination,
+      values.destinationScope,
+    )
+  ) {
+    return {
+      error:
+        "This destination is too broad. Choose a specific city, region, or multi-city plan before generating.",
+    };
+  }
+
+  const plannerInput = toTripPlannerInput(values);
+
+  let itinerary_data;
+  try {
+    itinerary_data = await generateTripItinerary(plannerInput);
+  } catch (error) {
+    logTripGenerationFailure(error);
+    return { error: toUserFacingTripError(error) };
+  }
 
   const { data, error } = await supabase
     .from("trips")
@@ -62,9 +91,9 @@ export async function createTripAction(
 
   if (error || !data?.id) {
     return {
-      error:
-        error?.message ??
-        "We couldn’t save your trip. Please try again in a moment.",
+      error: toUserFacingTripError(
+        new TripGenerationError("SAVE_FAILED", "Supabase insert failed"),
+      ),
     };
   }
 
@@ -96,9 +125,7 @@ export async function deleteTripAction(id: string): Promise<TripActionResult> {
 
   if (error) {
     return {
-      error:
-        error.message ||
-        "We couldn’t delete this trip. Please try again in a moment.",
+      error: "We couldn’t delete this trip. Please try again in a moment.",
     };
   }
 
@@ -134,9 +161,7 @@ export async function updateTripStatusAction(
 
   if (error) {
     return {
-      error:
-        error.message ||
-        "We couldn’t update this trip. Please try again in a moment.",
+      error: "We couldn’t update this trip. Please try again in a moment.",
     };
   }
 

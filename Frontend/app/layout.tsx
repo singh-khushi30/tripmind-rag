@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s · TripMind",
   },
   description:
-    "Plan smarter travel with calm, source-grounded itineraries tailored to your style and budget.",
+    "Personalized AI travel planning with budget-aware itineraries tailored to your style and pace.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

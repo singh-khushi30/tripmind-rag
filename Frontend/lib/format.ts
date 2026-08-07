@@ -23,3 +23,17 @@ export function formatTripDate(isoDate: string) {
     year: "numeric",
   }).format(date);
 }
+
+export function formatDurationMinutes(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  if (remaining === 0) {
+    return hours === 1 ? "1 hr" : `${hours} hrs`;
+  }
+
+  return `${hours} hr ${remaining} min`;
+}
