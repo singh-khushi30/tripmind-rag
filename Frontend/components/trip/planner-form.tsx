@@ -2,7 +2,7 @@
 
 import { useId, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
 
 import { FormField } from "@/components/forms/form-field";
@@ -94,7 +94,7 @@ export function PlannerForm() {
     getValues,
     formState: { errors, isSubmitting },
   } = useForm<TripPlannerSchema>({
-    resolver: zodResolver(tripPlannerSchema),
+    resolver: standardSchemaResolver(tripPlannerSchema),
     defaultValues: DEFAULT_VALUES,
     mode: "onBlur",
   });

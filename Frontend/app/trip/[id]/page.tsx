@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/layout/container";
 import { ErrorState } from "@/components/states/error-state";
 import { ResultsView } from "@/components/trip/results-view";
+import { ensureTripLocations } from "@/lib/maps/ensure-trip-locations";
 import { tripToTripResult } from "@/lib/trips/mappers";
 import { getTripCitations, getUserTripById } from "@/lib/trips/queries";
 import type { Trip } from "@/types/database";
@@ -35,19 +36,11 @@ export default async function TripPage({ params }: TripPageProps) {
   const { id } = await params;
 
   let trip: Trip | null = null;
-  let loadError = false;
   let citations = [] as Awaited<ReturnType<typeof getTripCitations>>;
 
   try {
     trip = await getUserTripById(id);
-    if (trip) {
-      citations = await getTripCitations(id);
-    }
   } catch {
-    loadError = true;
-  }
-
-  if (loadError) {
     return (
       <Container className="py-16">
         <ErrorState
@@ -60,6 +53,19 @@ export default async function TripPage({ params }: TripPageProps) {
 
   if (!trip) {
     notFound();
+  }
+
+  // Geocode backfill is best-effort and must not block/fail the trip page.
+  try {
+    trip = await ensureTripLocations(trip);
+  } catch {
+    // Keep original trip data.
+  }
+
+  try {
+    citations = await getTripCitations(id);
+  } catch {
+    citations = [];
   }
 
   return (

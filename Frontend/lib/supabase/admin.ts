@@ -12,6 +12,7 @@ import type { Database } from "@/types/database";
  * - upserting travel_sources
  * - upserting travel_document_chunks
  * - checking/refreshing indexed travel content
+ * - upserting location_cache (Nominatim geocode cache)
  *
  * Never import into client components, browser clients, or frontend requests.
  * Never expose SUPABASE_SERVICE_ROLE_KEY via NEXT_PUBLIC_ or logs.

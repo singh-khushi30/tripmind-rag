@@ -103,6 +103,15 @@ export type TripMapMarker = {
   label: string;
 };
 
+export type TripRouteWarning = {
+  code: string;
+  severity: "info" | "warning" | "error";
+  day_number: number;
+  message: string;
+  distance_km?: number;
+  duration_minutes?: number;
+};
+
 export type TripResult = {
   id: string;
   destination: string;
@@ -126,6 +135,7 @@ export type TripResult = {
   };
   itinerary: ItineraryDay[];
   citations?: TripCitationSource[];
+  routeWarnings?: TripRouteWarning[];
 };
 
 export type SavedTrip = {

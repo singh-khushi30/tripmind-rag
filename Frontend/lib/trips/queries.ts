@@ -58,7 +58,8 @@ export async function getTripCitations(tripId: string): Promise<TripCitationView
     .order("citation_key", { ascending: true });
 
   if (error) {
-    throw new Error(error.message);
+    // Citations are optional for rendering the trip page.
+    return [];
   }
 
   type CitationJoinRow = {

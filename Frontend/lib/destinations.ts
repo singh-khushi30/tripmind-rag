@@ -31,7 +31,7 @@ export const DESTINATION_IMAGES = {
 export type DestinationKey = keyof typeof DESTINATION_IMAGES;
 
 export const FALLBACK_TRAVEL_IMAGE =
-  "https://images.unsplash.com/photo-1488646953014-aaec022cdb4c?auto=format&fit=crop&w=1200&q=80";
+  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1200&q=80";
 
 export function destinationKeyFromId(id: string): DestinationKey | null {
   if (id.includes("kyoto")) return "kyoto";

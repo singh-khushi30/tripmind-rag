@@ -7,11 +7,12 @@ import { BudgetCard } from "@/components/cards/budget-card";
 import { TripSummaryCard } from "@/components/cards/trip-summary-card";
 import { Container } from "@/components/layout/container";
 import { TripResultsSkeleton } from "@/components/loading/trip-results-skeleton";
-import { MapPlaceholder } from "@/components/map/map-placeholder";
+import { TripMapPanel } from "@/components/map/trip-map-panel";
 import { ErrorState } from "@/components/states/error-state";
 import { DayTimeline } from "@/components/trip/day-timeline";
 import { SourcesUsedPanel } from "@/components/trip/sources-used-panel";
 import type { ItineraryData } from "@/lib/gemini/schema";
+import type { RouteWarning } from "@/lib/maps/validate-route";
 import type { TripCitationSource, TripResult } from "@/types/trip";
 
 type ResultsViewProps = {
@@ -177,7 +178,12 @@ function ResultsReady({ trip }: { trip: TripResult }) {
           citationsByKey={citationsByKey}
         />
         <aside className="space-y-4 lg:sticky lg:top-24">
-          <MapPlaceholder label={trip.destination} />
+          <TripMapPanel
+            destination={trip.destination}
+            days={trip.itinerary}
+            currency={trip.budget.currency}
+            warnings={(trip.routeWarnings ?? []) as RouteWarning[]}
+          />
           <SourcesUsedPanel citations={citations} />
         </aside>
       </div>

@@ -47,6 +47,15 @@ export function ActivityCard({
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-1.5">
+          {activity.location_confidence === "exact" ? (
+            <Badge variant="outline">Verified location</Badge>
+          ) : null}
+          {activity.location_confidence === "approximate" ? (
+            <Badge variant="outline">Approximate location</Badge>
+          ) : null}
+          {activity.location_confidence === "unavailable" ? (
+            <Badge variant="outline">Location unavailable</Badge>
+          ) : null}
           <Badge variant="secondary">{activity.category}</Badge>
           <Badge variant="outline">
             {INDOOR_OUTDOOR_LABEL[activity.indoor_outdoor]}

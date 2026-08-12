@@ -115,6 +115,50 @@ export type TripCitationInsert = Omit<TripCitation, "id" | "created_at"> & {
   created_at?: string;
 };
 
+export type LocationConfidence = "exact" | "approximate" | "unavailable";
+
+export type LocationCacheRow = {
+  normalized_query: string;
+  latitude: number;
+  longitude: number;
+  display_name: string | null;
+  provider: string;
+  confidence: string | null;
+  fetched_at: string;
+};
+
+export type LocationCacheInsert = {
+  normalized_query: string;
+  latitude: number;
+  longitude: number;
+  display_name?: string | null;
+  provider?: string;
+  confidence?: string | null;
+  fetched_at?: string;
+};
+
+export type TripActivityLocation = {
+  id: string;
+  trip_id: string;
+  activity_key: string;
+  activity_title: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  display_name: string | null;
+  geocoding_provider: string;
+  confidence: LocationConfidence | null;
+  created_at: string;
+};
+
+export type TripActivityLocationInsert = Omit<
+  TripActivityLocation,
+  "id" | "created_at"
+> & {
+  id?: string;
+  created_at?: string;
+};
+
 export type MatchTravelDocumentRow = {
   id: string;
   source_id: string;
@@ -153,6 +197,18 @@ export type Database = {
         Row: TripCitation;
         Insert: TripCitationInsert;
         Update: Partial<TripCitationInsert>;
+        Relationships: [];
+      };
+      location_cache: {
+        Row: LocationCacheRow;
+        Insert: LocationCacheInsert;
+        Update: Partial<LocationCacheInsert>;
+        Relationships: [];
+      };
+      trip_activity_locations: {
+        Row: TripActivityLocation;
+        Insert: TripActivityLocationInsert;
+        Update: Partial<TripActivityLocationInsert>;
         Relationships: [];
       };
     };

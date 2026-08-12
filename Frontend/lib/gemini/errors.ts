@@ -222,11 +222,20 @@ export function logTripGenerationFailure(error: unknown) {
         ? error.message
         : String(error);
 
+  const digest =
+    error &&
+    typeof error === "object" &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string"
+      ? (error as { digest: string }).digest.slice(0, 80)
+      : undefined;
+
   console.error("[tripmind:gemini]", {
     code: "UNKNOWN",
     name,
-    message: message.slice(0, 240),
+    message: message.slice(0, 240) || "(empty message)",
     status,
+    digest,
     cause: summarizeCause(error),
   });
 }

@@ -14,6 +14,12 @@ export const conversionStatusSchema = z.enum([
 
 export const indoorOutdoorSchema = z.enum(["indoor", "outdoor", "mixed"]);
 
+export const locationConfidenceSchema = z.enum([
+  "exact",
+  "approximate",
+  "unavailable",
+]);
+
 export const itineraryActivitySchema = z.object({
   start_time: z.string().min(1),
   title: z.string().min(1),
@@ -27,6 +33,11 @@ export const itineraryActivitySchema = z.object({
   reservation_required: z.boolean(),
   notes: z.string().nullable(),
   citation_ids: z.array(z.string().min(1)).optional(),
+  /** Attached server-side after Nominatim geocoding — not produced by Gemini. */
+  latitude: z.number().finite().nullable().optional(),
+  longitude: z.number().finite().nullable().optional(),
+  location_display_name: z.string().nullable().optional(),
+  location_confidence: locationConfidenceSchema.optional(),
 });
 
 export const itineraryDaySchema = z.object({
@@ -65,24 +76,45 @@ export const itineraryDataSchema = z.object({
       citation_keys: z.array(z.string()),
     })
     .optional(),
+  route_meta: z
+    .object({
+      warnings: z.array(z.unknown()).optional(),
+      days: z
+        .record(
+          z.string(),
+          z.object({
+            total_distance_km: z.number(),
+            total_duration_minutes: z.number(),
+            source: z.string(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
 });
+
+const geminiActivitySchema = itineraryActivitySchema
+  .omit({
+    latitude: true,
+    longitude: true,
+    location_display_name: true,
+    location_confidence: true,
+  })
+  .extend({
+    citation_ids: z.array(z.string().min(1)).min(1),
+  });
 
 /** Schema sent to Gemini — omit app-computed fields. */
 export const geminiItineraryResponseSchema = itineraryDataSchema
   .omit({
     budget_totals: true,
     grounding: true,
+    route_meta: true,
   })
   .extend({
     days: z.array(
       itineraryDaySchema.extend({
-        activities: z
-          .array(
-            itineraryActivitySchema.extend({
-              citation_ids: z.array(z.string().min(1)).min(1),
-            }),
-          )
-          .min(1),
+        activities: z.array(geminiActivitySchema).min(1),
       }),
     ),
   });
@@ -90,6 +122,7 @@ export const geminiItineraryResponseSchema = itineraryDataSchema
 export type BudgetStatus = z.infer<typeof budgetStatusSchema>;
 export type ConversionStatus = z.infer<typeof conversionStatusSchema>;
 export type IndoorOutdoor = z.infer<typeof indoorOutdoorSchema>;
+export type LocationConfidence = z.infer<typeof locationConfidenceSchema>;
 export type ItineraryActivity = z.infer<typeof itineraryActivitySchema>;
 export type ItineraryDay = z.infer<typeof itineraryDaySchema>;
 export type BudgetTotals = z.infer<typeof budgetTotalsSchema>;

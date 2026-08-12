@@ -1,4 +1,7 @@
-import { itineraryDataSchema } from "@/lib/gemini/schema";
+import {
+  itineraryDataSchema,
+  type ItineraryData,
+} from "@/lib/gemini/schema";
 import type { TripPlannerInput } from "@/lib/gemini/types";
 import type { Trip } from "@/types/database";
 import type { TripPlannerFormValues } from "@/types/planner";
@@ -53,7 +56,42 @@ export function tripToTripResult(
   citations: TripCitationView[] = [],
 ): TripResult {
   const parsed = itineraryDataSchema.safeParse(trip.itinerary_data);
-  const data = parsed.success ? parsed.data : null;
+  const raw =
+    trip.itinerary_data && typeof trip.itinerary_data === "object"
+      ? (trip.itinerary_data as Record<string, unknown>)
+      : null;
+  // Prefer strict parse, but fall back to raw JSON so map/coords still render
+  // if optional route metadata drifts ahead of the schema.
+  const data: ItineraryData | null = parsed.success
+    ? parsed.data
+    : raw
+      ? ({
+          destination:
+            typeof raw.destination === "string"
+              ? raw.destination
+              : trip.destination,
+          country: typeof raw.country === "string" ? raw.country : null,
+          summary:
+            typeof raw.summary === "string"
+              ? raw.summary
+              : "Saved TripMind itinerary.",
+          currency:
+            typeof raw.currency === "string" ? raw.currency : trip.currency,
+          estimated_total_cost:
+            typeof raw.estimated_total_cost === "number"
+              ? raw.estimated_total_cost
+              : Number(trip.budget),
+          budget_status:
+            (typeof raw.budget_status === "string"
+              ? raw.budget_status
+              : "within_budget") as ItineraryData["budget_status"],
+          days: (Array.isArray(raw.days) ? raw.days : []) as ItineraryData["days"],
+          route_meta:
+            raw.route_meta && typeof raw.route_meta === "object"
+              ? (raw.route_meta as ItineraryData["route_meta"])
+              : undefined,
+        } satisfies ItineraryData)
+      : null;
   const currency = (trip.currency ||
     data?.display_currency ||
     data?.currency ||
@@ -84,8 +122,11 @@ export function tripToTripResult(
       conversionStatus: data?.conversion_status ?? "unavailable",
       destinationLocalCurrency: data?.destination_local_currency ?? null,
     },
-    itinerary: data?.days ?? [],
+    itinerary: (data?.days ?? []) as TripResult["itinerary"],
     citations: tripCitationsToSources(citations),
+    routeWarnings: Array.isArray(data?.route_meta?.warnings)
+      ? (data.route_meta.warnings as TripResult["routeWarnings"])
+      : [],
   };
 }
 

@@ -10,6 +10,8 @@ import {
   TripGenerationError,
 } from "@/lib/gemini/errors";
 import { generateTripItinerary } from "@/lib/gemini/generate-itinerary";
+import { geocodeAndValidateItinerary } from "@/lib/maps/geocode-itinerary";
+import { isNextRedirectError } from "@/lib/next/errors";
 import {
   citationsFromRetrieval,
   collectUsedCitationKeys,
@@ -104,6 +106,8 @@ export async function createTripAction(
     };
   }
 
+  let finalItinerary = itinerary;
+
   if (retrieval) {
     const citationRows = citationsFromRetrieval(
       data.id,
@@ -137,6 +141,59 @@ export async function createTripAction(
         ).size,
       });
     }
+  }
+
+  try {
+    const geocoded = await geocodeAndValidateItinerary({
+      tripId: data.id,
+      itinerary,
+      destination: values.destination.trim(),
+      groundedContextBlock: retrieval?.contextBlock ?? null,
+    });
+
+    finalItinerary = geocoded.itinerary;
+
+    const { error: itineraryUpdateError } = await supabase
+      .from("trips")
+      .update({ itinerary_data: finalItinerary })
+      .eq("id", data.id)
+      .eq("user_id", user.id);
+
+    if (itineraryUpdateError) {
+      ragLog("geocode.itinerary_update_failed", {
+        trip_id: data.id,
+        message: itineraryUpdateError.message.slice(0, 160),
+      });
+    } else if (geocoded.locations.length > 0) {
+      const { error: locationInsertError } = await supabase
+        .from("trip_activity_locations")
+        .insert(geocoded.locations);
+
+      if (locationInsertError) {
+        // Common when migration 004 has not been applied yet.
+        ragLog("geocode.locations_insert_failed", {
+          trip_id: data.id,
+          message: locationInsertError.message.slice(0, 160),
+        });
+      }
+    }
+
+    ragLog("geocode.completed", {
+      trip_id: data.id,
+      geocoded_count: geocoded.geocoded_count,
+      failed_count: geocoded.failed_count,
+      warning_count: geocoded.warnings.length,
+    });
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    // Geocoding is best-effort — trip remains usable without coordinates.
+    ragLog("geocode.skipped", {
+      trip_id: data.id,
+      message:
+        error instanceof Error
+          ? error.message.slice(0, 160)
+          : "unknown_geocode_error",
+    });
   }
 
   revalidatePath("/saved-trips");

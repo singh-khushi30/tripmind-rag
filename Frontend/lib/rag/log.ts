@@ -18,7 +18,12 @@ const BLOCKED_KEYS = new Set([
 ]);
 
 function isDevLoggingEnabled() {
-  if (process.env.RAG_DEBUG === "1" || process.env.RAG_DEBUG === "true") {
+  if (
+    process.env.RAG_DEBUG === "1" ||
+    process.env.RAG_DEBUG === "true" ||
+    process.env.MAPS_DEBUG === "1" ||
+    process.env.MAPS_DEBUG === "true"
+  ) {
     return true;
   }
   return process.env.NODE_ENV !== "production";
