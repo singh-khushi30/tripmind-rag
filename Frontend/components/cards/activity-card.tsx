@@ -1,13 +1,15 @@
 import { Clock3, Coins, MapPin, Ticket } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { ActivitySources } from "@/components/trip/activity-sources";
 import { formatCurrency, formatDurationMinutes } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Currency, ItineraryActivity } from "@/types/trip";
+import type { Currency, ItineraryActivity, TripCitationSource } from "@/types/trip";
 
 type ActivityCardProps = {
   activity: ItineraryActivity;
   currency: Currency;
+  citationsByKey?: Map<string, TripCitationSource>;
   className?: string;
 };
 
@@ -20,6 +22,7 @@ const INDOOR_OUTDOOR_LABEL = {
 export function ActivityCard({
   activity,
   currency,
+  citationsByKey,
   className,
 }: ActivityCardProps) {
   return (
@@ -68,14 +71,20 @@ export function ActivityCard({
         <span className="inline-flex items-center gap-1.5">
           <Coins className="size-3.5" />
           {activity.estimated_cost === 0
-            ? "Free"
-            : formatCurrency(activity.estimated_cost, currency)}
+            ? "Free (estimate)"
+            : `${formatCurrency(activity.estimated_cost, currency)} (estimate)`}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Clock3 className="size-3.5" />
           {formatDurationMinutes(activity.duration_minutes)}
         </span>
       </div>
+      {citationsByKey ? (
+        <ActivitySources
+          citationIds={activity.citation_ids ?? []}
+          citationsByKey={citationsByKey}
+        />
+      ) : null}
     </article>
   );
 }

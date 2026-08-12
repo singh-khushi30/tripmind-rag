@@ -10,8 +10,9 @@ import { TripResultsSkeleton } from "@/components/loading/trip-results-skeleton"
 import { MapPlaceholder } from "@/components/map/map-placeholder";
 import { ErrorState } from "@/components/states/error-state";
 import { DayTimeline } from "@/components/trip/day-timeline";
+import { SourcesUsedPanel } from "@/components/trip/sources-used-panel";
 import type { ItineraryData } from "@/lib/gemini/schema";
-import type { TripResult } from "@/types/trip";
+import type { TripCitationSource, TripResult } from "@/types/trip";
 
 type ResultsViewProps = {
   trip?: TripResult;
@@ -47,6 +48,7 @@ function getDemoTrip(): TripResult {
             indoor_outdoor: "outdoor",
             reservation_required: false,
             notes: null,
+            citation_ids: [],
           },
           {
             start_time: "12:30",
@@ -61,6 +63,7 @@ function getDemoTrip(): TripResult {
             indoor_outdoor: "indoor",
             reservation_required: false,
             notes: "Confirm dietary needs on arrival.",
+            citation_ids: [],
           },
         ],
       },
@@ -89,6 +92,7 @@ function getDemoTrip(): TripResult {
       destinationLocalCurrency: "JPY",
     },
     itinerary: itinerary.days,
+    citations: [],
   };
 }
 
@@ -133,6 +137,11 @@ export function ResultsView({
 }
 
 function ResultsReady({ trip }: { trip: TripResult }) {
+  const citations = trip.citations ?? [];
+  const citationsByKey = new Map<string, TripCitationSource>(
+    citations.map((citation) => [citation.citation_key, citation]),
+  );
+
   return (
     <Container className="space-y-8 py-10">
       <div className="space-y-2">
@@ -152,8 +161,8 @@ function ResultsReady({ trip }: { trip: TripResult }) {
         role="note"
         className="border-border/80 bg-secondary/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm leading-relaxed"
       >
-        This itinerary is AI-generated. Prices, timings, and availability are
-        estimates and should be verified before booking.
+        Recommendations are grounded in retrieved Wikipedia and Wikivoyage
+        travel information. Prices and availability remain estimates.
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -162,9 +171,14 @@ function ResultsReady({ trip }: { trip: TripResult }) {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-        <DayTimeline days={trip.itinerary} currency={trip.budget.currency} />
+        <DayTimeline
+          days={trip.itinerary}
+          currency={trip.budget.currency}
+          citationsByKey={citationsByKey}
+        />
         <aside className="space-y-4 lg:sticky lg:top-24">
           <MapPlaceholder label={trip.destination} />
+          <SourcesUsedPanel citations={citations} />
         </aside>
       </div>
     </Container>

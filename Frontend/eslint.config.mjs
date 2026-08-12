@@ -7,7 +7,15 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   eslintConfigPrettier,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "scripts/cjs-server-only-shim.cjs",
+    "scripts/server-only-loader.mjs",
+    "scripts/server-only-stub.mjs",
+  ]),
 ]);
 
 export default eslintConfig;

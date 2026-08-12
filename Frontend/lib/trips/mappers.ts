@@ -2,7 +2,12 @@ import { itineraryDataSchema } from "@/lib/gemini/schema";
 import type { TripPlannerInput } from "@/lib/gemini/types";
 import type { Trip } from "@/types/database";
 import type { TripPlannerFormValues } from "@/types/planner";
-import type { Currency, TripResult } from "@/types/trip";
+import type {
+  Currency,
+  TripCitationSource,
+  TripCitationView,
+  TripResult,
+} from "@/types/trip";
 
 export function toTripPlannerInput(
   form: TripPlannerFormValues,
@@ -28,7 +33,23 @@ export function toTripPlannerInput(
   };
 }
 
-export function tripToTripResult(trip: Trip): TripResult {
+export function tripCitationsToSources(
+  citations: TripCitationView[],
+): TripCitationSource[] {
+  return citations.map((citation) => ({
+    citation_key: citation.citation_key,
+    source_type: citation.source_type,
+    source_title: citation.source_title,
+    source_url: citation.source_url,
+    section_title: citation.section_title,
+    fetched_at: citation.fetched_at,
+  }));
+}
+
+export function tripToTripResult(
+  trip: Trip,
+  citations: TripCitationView[] = [],
+): TripResult {
   const parsed = itineraryDataSchema.safeParse(trip.itinerary_data);
   const data = parsed.success ? parsed.data : null;
   const currency = (trip.currency ||
@@ -62,6 +83,7 @@ export function tripToTripResult(trip: Trip): TripResult {
       destinationLocalCurrency: data?.destination_local_currency ?? null,
     },
     itinerary: data?.days ?? [],
+    citations: tripCitationsToSources(citations),
   };
 }
 

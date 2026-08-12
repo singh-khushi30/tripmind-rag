@@ -5,7 +5,7 @@ import { Container } from "@/components/layout/container";
 import { ErrorState } from "@/components/states/error-state";
 import { ResultsView } from "@/components/trip/results-view";
 import { tripToTripResult } from "@/lib/trips/mappers";
-import { getUserTripById } from "@/lib/trips/queries";
+import { getTripCitations, getUserTripById } from "@/lib/trips/queries";
 import type { Trip } from "@/types/database";
 
 type TripPageProps = {
@@ -36,9 +36,13 @@ export default async function TripPage({ params }: TripPageProps) {
 
   let trip: Trip | null = null;
   let loadError = false;
+  let citations = [] as Awaited<ReturnType<typeof getTripCitations>>;
 
   try {
     trip = await getUserTripById(id);
+    if (trip) {
+      citations = await getTripCitations(id);
+    }
   } catch {
     loadError = true;
   }
@@ -59,6 +63,9 @@ export default async function TripPage({ params }: TripPageProps) {
   }
 
   return (
-    <ResultsView trip={tripToTripResult(trip)} initialState="ready" />
+    <ResultsView
+      trip={tripToTripResult(trip, citations)}
+      initialState="ready"
+    />
   );
 }

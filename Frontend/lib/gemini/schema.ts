@@ -26,6 +26,7 @@ export const itineraryActivitySchema = z.object({
   indoor_outdoor: indoorOutdoorSchema,
   reservation_required: z.boolean(),
   notes: z.string().nullable(),
+  citation_ids: z.array(z.string().min(1)).optional(),
 });
 
 export const itineraryDaySchema = z.object({
@@ -57,12 +58,34 @@ export const itineraryDataSchema = z.object({
   budget_status: budgetStatusSchema,
   budget_totals: budgetTotalsSchema.optional(),
   days: z.array(itineraryDaySchema).min(1),
+  grounding: z
+    .object({
+      destination_key: z.string(),
+      source_count: z.number().int().nonnegative(),
+      citation_keys: z.array(z.string()),
+    })
+    .optional(),
 });
 
-/** Schema sent to Gemini — omit app-computed budget_totals. */
-export const geminiItineraryResponseSchema = itineraryDataSchema.omit({
-  budget_totals: true,
-});
+/** Schema sent to Gemini — omit app-computed fields. */
+export const geminiItineraryResponseSchema = itineraryDataSchema
+  .omit({
+    budget_totals: true,
+    grounding: true,
+  })
+  .extend({
+    days: z.array(
+      itineraryDaySchema.extend({
+        activities: z
+          .array(
+            itineraryActivitySchema.extend({
+              citation_ids: z.array(z.string().min(1)).min(1),
+            }),
+          )
+          .min(1),
+      }),
+    ),
+  });
 
 export type BudgetStatus = z.infer<typeof budgetStatusSchema>;
 export type ConversionStatus = z.infer<typeof conversionStatusSchema>;

@@ -1,15 +1,21 @@
 import { ActivityCard } from "@/components/cards/activity-card";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Currency, ItineraryDay } from "@/types/trip";
+import type { Currency, ItineraryDay, TripCitationSource } from "@/types/trip";
 
 type DayTimelineProps = {
   days: ItineraryDay[];
   currency: Currency;
+  citationsByKey?: Map<string, TripCitationSource>;
   className?: string;
 };
 
-export function DayTimeline({ days, currency, className }: DayTimelineProps) {
+export function DayTimeline({
+  days,
+  currency,
+  citationsByKey,
+  className,
+}: DayTimelineProps) {
   return (
     <div className={cn("space-y-8", className)}>
       {days.map((day) => (
@@ -46,7 +52,11 @@ export function DayTimeline({ days, currency, className }: DayTimelineProps) {
                 className="relative"
               >
                 <span className="bg-brand absolute top-6 -left-[1.2rem] size-2.5 rounded-full ring-4 ring-[oklch(0.985_0.008_240)]" />
-                <ActivityCard activity={activity} currency={currency} />
+                <ActivityCard
+                  activity={activity}
+                  currency={currency}
+                  citationsByKey={citationsByKey}
+                />
               </div>
             ))}
           </div>

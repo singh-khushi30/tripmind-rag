@@ -52,8 +52,21 @@ const USER_MESSAGES: Record<GeminiErrorCode, string> = {
   UNKNOWN: "We couldn’t generate your itinerary right now. Please try again.",
 };
 
+const GROUNDING_MESSAGE =
+  "We couldn’t find enough reliable destination information to create a grounded itinerary. Try a more specific city or region.";
+
 export function toUserFacingTripError(error: unknown): string {
+  if (
+    error instanceof Error &&
+    error.message === "INSUFFICIENT_GROUNDING_CONTEXT"
+  ) {
+    return GROUNDING_MESSAGE;
+  }
+
   if (error instanceof TripGenerationError) {
+    if (error.message === "INSUFFICIENT_GROUNDING_CONTEXT") {
+      return GROUNDING_MESSAGE;
+    }
     return USER_MESSAGES[error.code];
   }
 
@@ -158,6 +171,20 @@ export function classifyGeminiSdkError(error: unknown): TripGenerationError {
   );
 }
 
+function summarizeCause(cause: unknown): string | undefined {
+  if (!cause) return undefined;
+  if (cause instanceof Error) return cause.message.slice(0, 180);
+  if (typeof cause === "object") {
+    try {
+      const text = JSON.stringify(cause);
+      return text.slice(0, 180);
+    } catch {
+      return undefined;
+    }
+  }
+  return String(cause).slice(0, 180);
+}
+
 /** Safe server log helper — never logs secrets or full API payloads. */
 export function logTripGenerationFailure(error: unknown) {
   if (error instanceof TripGenerationError) {
@@ -165,6 +192,7 @@ export function logTripGenerationFailure(error: unknown) {
       code: error.code,
       message: error.message,
       status: getErrorStatus(error.cause),
+      cause: summarizeCause(error.cause),
     });
     return;
   }
@@ -175,5 +203,6 @@ export function logTripGenerationFailure(error: unknown) {
     code: "UNKNOWN",
     name,
     status,
+    cause: summarizeCause(error),
   });
 }

@@ -6,6 +6,7 @@ import {
 import { TripGenerationError } from "@/lib/gemini/errors";
 import {
   geminiItineraryResponseSchema,
+  itineraryDataSchema,
   type ItineraryActivity,
   type ItineraryData,
 } from "@/lib/gemini/schema";
@@ -176,6 +177,7 @@ function createFillerActivity(
     indoor_outdoor: "mixed",
     reservation_required: false,
     notes: "Added to match your selected travel pace.",
+    citation_ids: [],
   };
 }
 
@@ -260,6 +262,10 @@ export { isPlaceholderCoordinate } from "@/lib/geo/coordinates";
 export function parseAndValidateItinerary(
   raw: unknown,
   input: TripPlannerInput,
+  options?: {
+    allowedCitationKeys?: string[];
+    requireCitations?: boolean;
+  },
 ): ItineraryData {
   if (requiresDestinationClarification(input.destination, input.destination_scope)) {
     throw new TripGenerationError(
@@ -268,7 +274,14 @@ export function parseAndValidateItinerary(
     );
   }
 
-  const parsed = geminiItineraryResponseSchema.safeParse(raw);
+  const schema = options?.requireCitations
+    ? geminiItineraryResponseSchema
+    : itineraryDataSchema.omit({
+        budget_totals: true,
+        grounding: true,
+      });
+
+  const parsed = schema.safeParse(raw);
 
   if (!parsed.success) {
     throw new TripGenerationError(
@@ -278,7 +291,18 @@ export function parseAndValidateItinerary(
     );
   }
 
-  const safeguarded = assertItinerarySafeguards(parsed.data, input);
+  const withCitationDefaults: ItineraryData = {
+    ...parsed.data,
+    days: parsed.data.days.map((day) => ({
+      ...day,
+      activities: day.activities.map((activity) => ({
+        ...activity,
+        citation_ids: activity.citation_ids ?? [],
+      })),
+    })),
+  };
+
+  const safeguarded = assertItinerarySafeguards(withCitationDefaults, input, options);
   const reconciled = reconcileItineraryBudget(safeguarded, input);
 
   if (
@@ -300,6 +324,10 @@ export function parseAndValidateItinerary(
 export function assertItinerarySafeguards(
   itinerary: ItineraryData,
   input: TripPlannerInput,
+  options?: {
+    allowedCitationKeys?: string[];
+    requireCitations?: boolean;
+  },
 ): ItineraryData {
   if (!itinerary.destination.trim()) {
     throw new TripGenerationError(
@@ -371,7 +399,24 @@ export function assertItinerarySafeguards(
       );
     }
 
-    const activities = fitActivitiesToPace(day.activities, input.travel_pace);
+    const activities = fitActivitiesToPace(day.activities, input.travel_pace).map(
+      (activity) => {
+        if (
+          options?.requireCitations &&
+          (!activity.citation_ids || activity.citation_ids.length === 0) &&
+          options.allowedCitationKeys?.[0]
+        ) {
+          return {
+            ...activity,
+            citation_ids: [options.allowedCitationKeys[0]],
+          };
+        }
+        return {
+          ...activity,
+          citation_ids: activity.citation_ids ?? [],
+        };
+      },
+    );
 
     if (
       activities.length < paceRange.min ||

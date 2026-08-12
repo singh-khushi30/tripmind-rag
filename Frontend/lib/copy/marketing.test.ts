@@ -5,14 +5,13 @@ import { describe, expect, it } from "vitest";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-describe("pre-RAG marketing copy", () => {
-  it("does not show source-grounded claims before RAG", () => {
+describe("marketing copy", () => {
+  it("avoids overstated source claims on marketing surfaces", () => {
     const files = [
       "components/cards/landing-hero.tsx",
       "components/layout/footer.tsx",
       "app/layout.tsx",
       "data/mock/planner-options.ts",
-      "components/trip/results-view.tsx",
     ];
 
     for (const relative of files) {

@@ -10,6 +10,10 @@ import {
   TripGenerationError,
 } from "@/lib/gemini/errors";
 import { generateTripItinerary } from "@/lib/gemini/generate-itinerary";
+import {
+  citationsFromRetrieval,
+  collectUsedCitationKeys,
+} from "@/lib/rag/citations";
 import { createClient } from "@/lib/supabase/server";
 import { toTripPlannerInput } from "@/lib/trips/mappers";
 import { tripPlannerSchema } from "@/lib/validation/trip-planner";
@@ -58,13 +62,15 @@ export async function createTripAction(
 
   const plannerInput = toTripPlannerInput(values);
 
-  let itinerary_data;
+  let generation;
   try {
-    itinerary_data = await generateTripItinerary(plannerInput);
+    generation = await generateTripItinerary(plannerInput);
   } catch (error) {
     logTripGenerationFailure(error);
     return { error: toUserFacingTripError(error) };
   }
+
+  const { itinerary, retrieval } = generation;
 
   const { data, error } = await supabase
     .from("trips")
@@ -84,7 +90,7 @@ export async function createTripAction(
         ? values.specialNotes.trim()
         : null,
       status: "generated" satisfies TripStatus,
-      itinerary_data,
+      itinerary_data: itinerary,
     })
     .select("id")
     .single();
@@ -95,6 +101,33 @@ export async function createTripAction(
         new TripGenerationError("SAVE_FAILED", "Supabase insert failed"),
       ),
     };
+  }
+
+  if (retrieval) {
+    const citationRows = citationsFromRetrieval(
+      data.id,
+      retrieval.chunks,
+      collectUsedCitationKeys(itinerary),
+    );
+
+    if (citationRows.length > 0) {
+      const { error: citationError } = await supabase
+        .from("trip_citations")
+        .insert(citationRows);
+
+      if (citationError) {
+        await supabase.from("trips").delete().eq("id", data.id).eq("user_id", user.id);
+        return {
+          error: toUserFacingTripError(
+            new TripGenerationError(
+              "SAVE_FAILED",
+              "Supabase citation insert failed",
+              citationError,
+            ),
+          ),
+        };
+      }
+    }
   }
 
   revalidatePath("/saved-trips");

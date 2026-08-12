@@ -86,6 +86,7 @@ export function buildMockItineraryData(input: TripPlannerInput): ItineraryData {
       indoor_outdoor: "mixed" as const,
       reservation_required: false,
       notes: null,
+      citation_ids: [] as string[],
     }));
 
     const activities = fitActivitiesToPace(mapped, input.travel_pace);

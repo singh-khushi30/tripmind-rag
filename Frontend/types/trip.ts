@@ -78,6 +78,23 @@ export type TripSource = {
   type: "guide" | "review" | "official" | "blog";
 };
 
+export type TripCitationSource = {
+  citation_key: string;
+  source_type: "wikipedia" | "wikivoyage";
+  source_title: string;
+  source_url: string;
+  section_title: string | null;
+  fetched_at: string | null;
+};
+
+export type TripCitationView = TripCitationSource & {
+  id: string;
+  trip_id: string;
+  travel_chunk_id: string;
+  travel_source_id: string;
+  created_at: string;
+};
+
 export type TripMapMarker = {
   x: number;
   y: number;
@@ -106,6 +123,7 @@ export type TripResult = {
     destinationLocalCurrency?: string | null;
   };
   itinerary: ItineraryDay[];
+  citations?: TripCitationSource[];
 };
 
 export type SavedTrip = {

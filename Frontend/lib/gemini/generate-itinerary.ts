@@ -18,13 +18,30 @@ import {
 import { getItineraryJsonSchema, type ItineraryData } from "@/lib/gemini/schema";
 import type { TripPlannerInput } from "@/lib/gemini/types";
 import { parseAndValidateItinerary } from "@/lib/gemini/validate-itinerary";
+import { assertValidCitationIds } from "@/lib/rag/citations";
+import { ingestDestination } from "@/lib/rag/ingest-destination";
+import {
+  retrieveTravelContext,
+  type TravelRetrievalResult,
+} from "@/lib/rag/retrieve";
+
+export type GenerateTripResult = {
+  itinerary: ItineraryData;
+  retrieval: TravelRetrievalResult | null;
+};
 
 export async function generateTripItinerary(
   input: TripPlannerInput,
-): Promise<ItineraryData> {
+): Promise<GenerateTripResult> {
   if (isMockItineraryEnabled()) {
-    return buildMockItineraryData(input);
+    return {
+      itinerary: buildMockItineraryData(input),
+      retrieval: null,
+    };
   }
+
+  await ingestDestination(input.destination);
+  const retrieval = await retrieveTravelContext(input);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -33,7 +50,7 @@ export async function generateTripItinerary(
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
-      contents: buildItineraryUserPrompt(input),
+      contents: buildItineraryUserPrompt(input, retrieval.contextBlock),
       config: {
         systemInstruction: ITINERARY_SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
@@ -65,7 +82,27 @@ export async function generateTripItinerary(
       );
     }
 
-    return parseAndValidateItinerary(json, input);
+    const validated = parseAndValidateItinerary(json, input, {
+      allowedCitationKeys: retrieval.citationKeys,
+      requireCitations: true,
+    });
+
+    const withCitations = assertValidCitationIds(
+      validated,
+      retrieval.citationKeys,
+    );
+
+    return {
+      itinerary: {
+        ...withCitations,
+        grounding: {
+          destination_key: retrieval.destination_key,
+          source_count: retrieval.chunks.length,
+          citation_keys: retrieval.citationKeys,
+        },
+      },
+      retrieval,
+    };
   } catch (error) {
     if (error instanceof TripGenerationError) {
       throw error;
