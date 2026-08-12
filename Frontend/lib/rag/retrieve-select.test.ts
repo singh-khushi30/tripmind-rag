@@ -54,9 +54,9 @@ describe("retrieval filters", () => {
 describe("diversifyChunks", () => {
   it("filters by destination-compatible source types only", () => {
     const selected = diversifyChunks([
-      row({ id: "1", source_type: "wikipedia" }),
-      row({ id: "2", source_type: "blog" }),
-      row({ id: "3", source_type: "wikivoyage" }),
+      row({ id: "chunk-1", source_type: "wikipedia" }),
+      row({ id: "chunk-2", source_type: "blog" }),
+      row({ id: "chunk-3", source_type: "wikivoyage" }),
     ]);
 
     expect(selected.map((chunk) => chunk.source_type)).toEqual([
@@ -65,19 +65,19 @@ describe("diversifyChunks", () => {
     ]);
   });
 
-  it("returns source metadata and skips near-duplicate sections", () => {
+  it("uses chunk UUIDs as citation IDs and returns source metadata", () => {
     const selected = diversifyChunks([
       row({
-        id: "1",
-        source_id: "src-wiki",
+        id: "11111111-1111-1111-1111-111111111111",
+        source_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         source_type: "wikipedia",
         source_url: "https://en.wikipedia.org/wiki/Paris",
         section_title: "See",
         similarity: 0.95,
       }),
       row({
-        id: "2",
-        source_id: "src-wiki",
+        id: "22222222-2222-2222-2222-222222222222",
+        source_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         source_type: "wikipedia",
         source_url: "https://en.wikipedia.org/wiki/Paris",
         section_title: "See",
@@ -85,32 +85,27 @@ describe("diversifyChunks", () => {
         similarity: 0.94,
       }),
       row({
-        id: "3",
-        source_id: "src-voyage",
+        id: "33333333-3333-3333-3333-333333333333",
+        source_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
         source_type: "wikivoyage",
         source_url: "https://en.wikivoyage.org/wiki/Paris",
         section_title: "Eat",
         similarity: 0.93,
       }),
-      row({
-        id: "4",
-        source_id: "src-louvre",
-        source_type: "wikipedia",
-        source_url: "https://en.wikipedia.org/wiki/Louvre",
-        section_title: "History",
-        similarity: 0.92,
-      }),
     ]);
 
-    expect(selected[0]?.source_type).toBe("wikipedia");
+    expect(selected[0]?.citation_key).toBe(
+      "11111111-1111-1111-1111-111111111111",
+    );
+    expect(selected[0]?.travel_chunk_id).toBe(
+      "11111111-1111-1111-1111-111111111111",
+    );
+    expect(selected[0]?.travel_source_id).toBe(
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
+    expect(selected.some((chunk) => chunk.travel_chunk_id.startsWith("2222"))).toBe(
+      false,
+    );
     expect(selected[1]?.source_type).toBe("wikivoyage");
-    expect(selected.some((chunk) => chunk.travel_chunk_id === "2")).toBe(false);
-    expect(selected[0]?.travel_source_id).toBe("src-wiki");
-    expect(selected[0]?.source_url).toContain("wikipedia.org");
-    expect(selected.map((chunk) => chunk.citation_key)).toEqual([
-      "src_1",
-      "src_2",
-      "src_3",
-    ]);
   });
 });

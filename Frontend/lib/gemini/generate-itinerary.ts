@@ -30,6 +30,39 @@ export type GenerateTripResult = {
   retrieval: TravelRetrievalResult | null;
 };
 
+function toTripPipelineError(error: unknown): TripGenerationError {
+  if (error instanceof TripGenerationError) {
+    return error;
+  }
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error &&
+          "message" in error &&
+          typeof error.message === "string"
+        ? error.message
+        : String(error);
+
+  if (message === "MISSING_GEMINI_API_KEY") {
+    return new TripGenerationError(
+      "MISSING_API_KEY",
+      "Gemini API key is not configured",
+      error,
+    );
+  }
+
+  if (
+    message.toLowerCase().includes("websocket") ||
+    message.toLowerCase().includes("supabase_service_role_key")
+  ) {
+    return new TripGenerationError("UNKNOWN", message, error);
+  }
+
+  return classifyGeminiSdkError(error);
+}
+
 export async function generateTripItinerary(
   input: TripPlannerInput,
 ): Promise<GenerateTripResult> {
@@ -40,13 +73,13 @@ export async function generateTripItinerary(
     };
   }
 
-  await ingestDestination(input.destination);
-  const retrieval = await retrieveTravelContext(input);
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
   try {
+    await ingestDestination(input.destination);
+    const retrieval = await retrieveTravelContext(input);
+
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -97,17 +130,14 @@ export async function generateTripItinerary(
         ...withCitations,
         grounding: {
           destination_key: retrieval.destination_key,
-          source_count: retrieval.chunks.length,
+          source_count: retrieval.uniqueSourceCount,
           citation_keys: retrieval.citationKeys,
         },
       },
       retrieval,
     };
   } catch (error) {
-    if (error instanceof TripGenerationError) {
-      throw error;
-    }
-    throw classifyGeminiSdkError(error);
+    throw toTripPipelineError(error);
   } finally {
     clearTimeout(timeout);
   }

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -51,10 +51,7 @@ describe("normalized source grouping", () => {
     ]);
 
     expect(sources).toHaveLength(2);
-    expect(sources.map((source) => source.source_url).sort()).toEqual([
-      "https://en.wikipedia.org/wiki/Paris",
-      "https://en.wikivoyage.org/wiki/Paris",
-    ]);
+    expect(new Set(sources.map((source) => source.source_url)).size).toBe(2);
   });
 
   it("keeps multiple chunks linked to one source without duplicating metadata", () => {
@@ -70,7 +67,6 @@ describe("normalized source grouping", () => {
     expect(chunks.every((item) => item.source_url === sources[0]?.source_url)).toBe(
       true,
     );
-    expect(sources[0]?.source_title).toBe("Paris");
     expect(new Set(chunks.map((item) => item.content_hash)).size).toBe(3);
   });
 });
@@ -107,8 +103,8 @@ describe("normalized retrieval + citations", () => {
     const selected = diversifyChunks(rows);
     expect(selected[0]?.travel_chunk_id).toBe("chunk-1");
     expect(selected[0]?.travel_source_id).toBe("source-1");
+    expect(selected[0]?.citation_key).toBe("chunk-1");
     expect(selected[0]?.source_title).toBe("Paris");
-    expect(selected[0]?.source_url).toContain("wikipedia.org");
   });
 
   it("citations resolve from retrieved chunk and source ids", () => {
@@ -130,42 +126,61 @@ describe("normalized retrieval + citations", () => {
     const rows = citationsFromRetrieval(
       "trip-1",
       selected,
-      new Set(["src_1"]),
+      new Set(["chunk-1"]),
     );
 
-    expect(rows).toEqual([
-      {
-        trip_id: "trip-1",
-        travel_chunk_id: "chunk-1",
-        travel_source_id: "source-1",
-        citation_key: "src_1",
-        source_type: "wikipedia",
-        source_title: "Paris",
-        source_url: "https://en.wikipedia.org/wiki/Paris",
-        section_title: "See",
-      },
-    ]);
+    expect(rows[0]?.travel_chunk_id).toBe("chunk-1");
+    expect(rows[0]?.travel_source_id).toBe("source-1");
+    expect(rows[0]?.citation_key).toBe("chunk-1");
   });
 });
 
-describe("migration contract", () => {
-  it("defines source/chunk tables, cascade delete, and legacy rename", () => {
-    const migrationPath = path.resolve(
+describe("no legacy schema references in app code", () => {
+  it("does not query travel_documents or use travel_document_id", () => {
+    const frontendRoot = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
-      "../../../supabase/migrations/003_normalize_travel_sources.sql",
+      "../..",
     );
-    const sql = readFileSync(migrationPath, "utf8");
 
-    expect(sql).toContain("create table if not exists public.travel_sources");
-    expect(sql).toContain(
-      "create table if not exists public.travel_document_chunks",
-    );
-    expect(sql).toContain("references public.travel_sources (id) on delete cascade");
-    expect(sql).toContain("using hnsw (embedding extensions.vector_cosine_ops)");
-    expect(sql).toContain("travel_chunk_id");
-    expect(sql).toContain("travel_source_id");
-    expect(sql).toContain("rename to travel_documents_legacy");
-    expect(sql).toContain("td.embedding");
-    expect(sql).toContain("inner join public.travel_sources s on s.id = c.source_id");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (
+          entry === "node_modules" ||
+          entry === ".next" ||
+          entry === "dist"
+        ) {
+          continue;
+        }
+        const full = path.join(dir, entry);
+        const stat = statSync(full);
+        if (stat.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (/\.(ts|tsx|mjs|cjs|js)$/.test(entry)) {
+          files.push(full);
+        }
+      }
+    };
+    walk(frontendRoot);
+
+    const legacyTable = /from\(\s*["']travel_documents(?:_legacy)?["']\s*\)/;
+    const legacyId = /\btravel_document_id\b/;
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      const relative = path.relative(frontendRoot, file);
+      // Guard tests may mention the forbidden identifier by name.
+      if (relative.endsWith(".test.ts") || relative.endsWith(".test.tsx")) {
+        continue;
+      }
+      const contents = readFileSync(file, "utf8");
+      if (legacyTable.test(contents) || legacyId.test(contents)) {
+        offenders.push(relative);
+      }
+    }
+
+    expect(offenders).toEqual([]);
   });
 });

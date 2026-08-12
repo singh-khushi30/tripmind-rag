@@ -67,11 +67,24 @@ export function toUserFacingTripError(error: unknown): string {
     if (error.message === "INSUFFICIENT_GROUNDING_CONTEXT") {
       return GROUNDING_MESSAGE;
     }
+    if (
+      error.message.toLowerCase().includes("websocket") ||
+      error.message.toLowerCase().includes("supabase_service_role_key")
+    ) {
+      return "TripMind couldn’t reach the travel knowledge service. Check SUPABASE_SERVICE_ROLE_KEY and restart the server, then try again.";
+    }
     return USER_MESSAGES[error.code];
   }
 
   if (error instanceof Error && error.message === "MISSING_GEMINI_API_KEY") {
     return USER_MESSAGES.MISSING_API_KEY;
+  }
+
+  if (
+    error instanceof Error &&
+    error.message.toLowerCase().includes("websocket")
+  ) {
+    return "TripMind couldn’t reach the travel knowledge service. Restart the server after installing dependencies, or upgrade to Node 22+.";
   }
 
   return USER_MESSAGES.UNKNOWN;
@@ -199,9 +212,20 @@ export function logTripGenerationFailure(error: unknown) {
 
   const status = getErrorStatus(error);
   const name = error instanceof Error ? error.name : "Error";
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error &&
+          "message" in error &&
+          typeof error.message === "string"
+        ? error.message
+        : String(error);
+
   console.error("[tripmind:gemini]", {
     code: "UNKNOWN",
     name,
+    message: message.slice(0, 240),
     status,
     cause: summarizeCause(error),
   });

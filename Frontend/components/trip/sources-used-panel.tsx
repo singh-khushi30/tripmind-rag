@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 
+import { dedupeCitationsBySourceId } from "@/lib/trip/dedupe-sources";
 import type { TripCitationSource } from "@/types/trip";
 
 const SOURCE_LABEL = {
@@ -25,13 +26,7 @@ function formatFetchedAt(value: string | null): string | null {
 export function SourcesUsedPanel({ citations }: SourcesUsedPanelProps) {
   if (citations.length === 0) return null;
 
-  const unique = new Map<string, TripCitationSource>();
-  for (const citation of citations) {
-    const key = `${citation.source_url}|${citation.section_title ?? ""}`;
-    if (!unique.has(key)) unique.set(key, citation);
-  }
-
-  const sources = Array.from(unique.values());
+  const sources = dedupeCitationsBySourceId(citations);
 
   return (
     <section className="border-border/80 bg-secondary/30 rounded-2xl border px-4 py-4">
@@ -47,7 +42,7 @@ export function SourcesUsedPanel({ citations }: SourcesUsedPanelProps) {
           const fetched = formatFetchedAt(source.fetched_at);
           return (
             <li
-              key={`${source.citation_key}-${source.source_url}-${source.section_title ?? ""}`}
+              key={source.travel_source_id || source.source_url}
               className="text-sm"
             >
               <a
@@ -61,7 +56,6 @@ export function SourcesUsedPanel({ citations }: SourcesUsedPanelProps) {
               </a>
               <p className="text-muted-foreground mt-0.5">
                 {SOURCE_LABEL[source.source_type]}
-                {source.section_title ? ` · ${source.section_title}` : ""}
                 {fetched ? ` · Fetched ${fetched}` : ""}
               </p>
             </li>

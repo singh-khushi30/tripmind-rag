@@ -80,6 +80,8 @@ export type TripSource = {
 
 export type TripCitationSource = {
   citation_key: string;
+  travel_chunk_id: string;
+  travel_source_id: string;
   source_type: "wikipedia" | "wikivoyage";
   source_title: string;
   source_url: string;

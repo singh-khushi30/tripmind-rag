@@ -43,7 +43,7 @@ function freshnessCutoff() {
   ).toISOString();
 }
 
-async function countFreshChunks(destinationKey: string) {
+async function countFreshSourcesAndChunks(destinationKey: string) {
   const admin = createAdminClient();
   const { data: sources, error: sourceError } = await admin
     .from("travel_sources")
@@ -56,7 +56,9 @@ async function countFreshChunks(destinationKey: string) {
   }
 
   const sourceIds = (sources ?? []).map((source) => source.id);
-  if (sourceIds.length === 0) return 0;
+  if (sourceIds.length === 0) {
+    return { sourcesReused: 0, chunksReused: 0 };
+  }
 
   const { count, error } = await admin
     .from("travel_document_chunks")
@@ -67,7 +69,10 @@ async function countFreshChunks(destinationKey: string) {
     throw error;
   }
 
-  return count ?? 0;
+  return {
+    sourcesReused: sourceIds.length,
+    chunksReused: count ?? 0,
+  };
 }
 
 async function findExistingChunkHashes(hashes: string[]) {
@@ -163,8 +168,8 @@ export async function ingestDestination(
     destination_name: normalized.destination_name,
   });
 
-  const freshCount = await countFreshChunks(normalized.destination_key);
-  if (freshCount >= RAG_MIN_CHUNKS) {
+  const fresh = await countFreshSourcesAndChunks(normalized.destination_key);
+  if (fresh.chunksReused >= RAG_MIN_CHUNKS) {
     const summary: IngestionSummary = {
       destination_key: normalized.destination_key,
       destination_name: normalized.destination_name,
@@ -172,7 +177,7 @@ export async function ingestDestination(
       source_status,
       pages_fetched: 0,
       chunks_created: 0,
-      chunks_reused: freshCount,
+      chunks_reused: fresh.chunksReused,
       embedding_count: 0,
       embedding_dimensions: GEMINI_EMBEDDING_DIMENSIONS,
       failures,
@@ -181,6 +186,7 @@ export async function ingestDestination(
 
     ragLog("ingest.reuse", {
       destination_key: summary.destination_key,
+      sources_reused: fresh.sourcesReused,
       chunks_reused: summary.chunks_reused,
       pages_fetched: 0,
       chunks_created: 0,
@@ -348,6 +354,7 @@ export async function ingestDestination(
   ragLog("ingest.complete", {
     destination_key: summary.destination_key,
     sources_fetched: summary.sources_fetched,
+    unique_sources_count: groupChunksBySourceUrl(selectedChunks).length,
     pages_fetched: summary.pages_fetched,
     chunks_created: summary.chunks_created,
     chunks_reused: summary.chunks_reused,

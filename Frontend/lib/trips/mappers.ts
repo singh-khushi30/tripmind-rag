@@ -38,6 +38,8 @@ export function tripCitationsToSources(
 ): TripCitationSource[] {
   return citations.map((citation) => ({
     citation_key: citation.citation_key,
+    travel_chunk_id: citation.travel_chunk_id,
+    travel_source_id: citation.travel_source_id,
     source_type: citation.source_type,
     source_title: citation.source_title,
     source_url: citation.source_url,

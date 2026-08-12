@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { ensureNodeWebSocket } from "@/lib/supabase/node-websocket";
 import type { Database } from "@/types/database";
 
 /**
@@ -30,21 +31,12 @@ function getSupabaseAdminEnv() {
       [
         "Missing SUPABASE_SERVICE_ROLE_KEY.",
         "Add it to Frontend/.env.local (server-only, never NEXT_PUBLIC_).",
-        "Then restart the Next.js dev server.",
+        "Then restart the Next.js server.",
       ].join(" "),
     );
   }
 
   return { url, serviceRoleKey };
-}
-
-function ensureNodeWebSocket() {
-  if (typeof WebSocket !== "undefined") return;
-
-  // Node < 22 has no global WebSocket; Supabase client requires one.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const ws = require("ws");
-  (globalThis as typeof globalThis & { WebSocket: unknown }).WebSocket = ws;
 }
 
 export function createAdminClient() {

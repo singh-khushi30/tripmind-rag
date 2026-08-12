@@ -30,6 +30,7 @@ export type TravelRetrievalResult = {
   chunks: RetrievedTravelChunk[];
   contextBlock: string;
   citationKeys: string[];
+  uniqueSourceCount: number;
 };
 
 function buildRetrievalQuery(input: TripPlannerInput): string {
@@ -50,10 +51,12 @@ function buildContextBlock(chunks: RetrievedTravelChunk[]): string {
 
   for (const chunk of chunks) {
     const block = [
-      `[SOURCE ${chunk.citation_key}]`,
-      `Title: ${chunk.source_title}`,
-      `Source type: ${chunk.source_type}`,
-      `URL: ${chunk.source_url}`,
+      `[${chunk.travel_chunk_id}]`,
+      `Chunk ID: ${chunk.travel_chunk_id}`,
+      `Source ID: ${chunk.travel_source_id}`,
+      `Source Type: ${chunk.source_type}`,
+      `Source Title: ${chunk.source_title}`,
+      `Source URL: ${chunk.source_url}`,
       `Section: ${chunk.section_title ?? "Overview"}`,
       `Content: ${sanitizeRetrievedContent(chunk.content)}`,
     ].join("\n");
@@ -80,6 +83,7 @@ export async function retrieveTravelContextWithClient(
     similarity_threshold: RAG_SIMILARITY_THRESHOLD,
   });
 
+  // Normalized RPC: travel_document_chunks ⨝ travel_sources
   const { data, error } = await supabase.rpc("match_travel_documents", {
     query_embedding: queryEmbedding as unknown as string,
     match_destination: normalized.destination_key,
@@ -111,13 +115,16 @@ export async function retrieveTravelContextWithClient(
     throw groundingFailureError({ reason: "empty_context" });
   }
 
-  const citationKeys = chunks.map((chunk) => chunk.citation_key);
+  const citationKeys = chunks.map((chunk) => chunk.travel_chunk_id);
+  const uniqueSourceCount = new Set(
+    chunks.map((chunk) => chunk.travel_source_id),
+  ).size;
 
   ragLog("retrieve.complete", {
     destination_key: normalized.destination_key,
-    retrieval_count: chunks.length,
+    retrieved_chunks_count: chunks.length,
+    unique_sources_count: uniqueSourceCount,
     citation_count: citationKeys.length,
-    source_types: Array.from(new Set(chunks.map((chunk) => chunk.source_type))),
   });
 
   return {
@@ -125,6 +132,7 @@ export async function retrieveTravelContextWithClient(
     chunks,
     contextBlock,
     citationKeys,
+    uniqueSourceCount,
   };
 }
 

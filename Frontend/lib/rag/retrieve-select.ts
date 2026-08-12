@@ -17,6 +17,7 @@ export type MatchRow = {
 };
 
 export type SelectedChunk = {
+  /** Citation ID for Gemini = chunk row id from match_travel_documents. */
   citation_key: string;
   travel_chunk_id: string;
   travel_source_id: string;
@@ -53,6 +54,7 @@ export function filterByDestinationKey(
 
 /**
  * Prefer source diversity and avoid near-duplicate URL/section/content rows.
+ * Citation IDs are the chunk UUIDs returned by match_travel_documents.
  */
 export function diversifyChunks(
   rows: MatchRow[],
@@ -66,7 +68,9 @@ export function diversifyChunks(
     (
       row,
     ): row is MatchRow & { source_type: "wikipedia" | "wikivoyage" } =>
-      row.source_type === "wikipedia" || row.source_type === "wikivoyage",
+      Boolean(row.id) &&
+      Boolean(row.source_id) &&
+      (row.source_type === "wikipedia" || row.source_type === "wikivoyage"),
   );
 
   const queue = [...eligible];
@@ -88,9 +92,8 @@ export function diversifyChunks(
       continue;
     }
 
-    const citation_key = `src_${selected.length + 1}`;
     selected.push({
-      citation_key,
+      citation_key: row.id,
       travel_chunk_id: row.id,
       travel_source_id: row.source_id,
       destination_name: row.destination_name,

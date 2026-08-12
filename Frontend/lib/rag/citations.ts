@@ -3,12 +3,15 @@ import type { ItineraryData } from "@/lib/gemini/schema";
 import { ragLog } from "@/lib/rag/log";
 import type { RetrievedTravelChunk } from "@/lib/rag/retrieve";
 
+/**
+ * Allowed citation IDs are travel_document_chunks.id values from retrieval.
+ */
 export function assertValidCitationIds(
   itinerary: ItineraryData,
-  allowedKeys: string[],
+  allowedChunkIds: string[],
 ): ItineraryData {
-  const allowed = new Set(allowedKeys);
-  const fallback = allowedKeys[0];
+  const allowed = new Set(allowedChunkIds);
+  const fallback = allowedChunkIds[0];
 
   if (!fallback) {
     throw new TripGenerationError(
@@ -27,7 +30,7 @@ export function assertValidCitationIds(
       if (fabricated.length > 0) {
         ragLog("citations.fabricated", {
           fabricated_count: fabricated.length,
-          allowed_count: allowedKeys.length,
+          allowed_count: allowedChunkIds.length,
         });
         throw new TripGenerationError(
           "INVALID_RESPONSE",
@@ -46,7 +49,7 @@ export function assertValidCitationIds(
 
   ragLog("citations.validated", {
     citation_validation_count: validatedCount,
-    allowed_count: allowedKeys.length,
+    allowed_count: allowedChunkIds.length,
   });
 
   return {
@@ -58,15 +61,16 @@ export function assertValidCitationIds(
 export function citationsFromRetrieval(
   tripId: string,
   chunks: RetrievedTravelChunk[],
-  usedKeys: Set<string>,
+  usedChunkIds: Set<string>,
 ) {
   return chunks
-    .filter((chunk) => usedKeys.has(chunk.citation_key))
+    .filter((chunk) => usedChunkIds.has(chunk.travel_chunk_id))
     .map((chunk) => ({
       trip_id: tripId,
       travel_chunk_id: chunk.travel_chunk_id,
       travel_source_id: chunk.travel_source_id,
-      citation_key: chunk.citation_key,
+      // Stable key = chunk id (matches activity.citation_ids).
+      citation_key: chunk.travel_chunk_id,
       // Metadata always comes from retrieved travel_sources rows, never Gemini.
       source_type: chunk.source_type,
       source_title: chunk.source_title,

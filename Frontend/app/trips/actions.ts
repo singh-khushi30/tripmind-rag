@@ -14,6 +14,7 @@ import {
   citationsFromRetrieval,
   collectUsedCitationKeys,
 } from "@/lib/rag/citations";
+import { ragLog } from "@/lib/rag/log";
 import { createClient } from "@/lib/supabase/server";
 import { toTripPlannerInput } from "@/lib/trips/mappers";
 import { tripPlannerSchema } from "@/lib/validation/trip-planner";
@@ -127,6 +128,14 @@ export async function createTripAction(
           ),
         };
       }
+
+      ragLog("citations.saved", {
+        trip_id: data.id,
+        citations_saved: citationRows.length,
+        unique_sources_count: new Set(
+          citationRows.map((row) => row.travel_source_id),
+        ).size,
+      });
     }
   }
 

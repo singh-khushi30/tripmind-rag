@@ -21,8 +21,7 @@ async function main() {
     "@/lib/rag/retrieve"
   );
   const { createAdminClient } = await import("@/lib/supabase/admin");
-  type TripPlannerInput =
-    import("@/lib/gemini/types").TripPlannerInput;
+  type TripPlannerInput = import("@/lib/gemini/types").TripPlannerInput;
   type ItineraryData = import("@/lib/gemini/schema").ItineraryData;
 
   function print(label: string, value: string | number | boolean) {
@@ -66,8 +65,6 @@ async function main() {
   }
 
   print("destination_key", ingestion.destination_key);
-  print("wikipedia_status", ingestion.source_status.wikipedia);
-  print("wikivoyage_status", ingestion.source_status.wikivoyage);
   print("sources_found", ingestion.sources_fetched.join(", ") || "(reused)");
   print("pages_fetched", ingestion.pages_fetched);
   print("chunks_created", ingestion.chunks_created);
@@ -80,26 +77,37 @@ async function main() {
       : `${ingestion.embedding_dimensions} (expected ${GEMINI_EMBEDDING_DIMENSIONS})`,
   );
 
-  if (ingestion.source_status.wikipedia === "failed") {
-    print("wikipedia_ingestion", "failed");
-  } else if (ingestion.reused_existing) {
-    print("wikipedia_ingestion", "skipped (fresh cache)");
-  } else {
-    print(
-      "wikipedia_ingestion",
-      ingestion.source_status.wikipedia === "ok" ? "passed" : "skipped",
-    );
+  const { count: parisSourceCount, error: sourceCountError } = await admin
+    .from("travel_sources")
+    .select("id", { count: "exact", head: true })
+    .eq("destination_key", "paris");
+  if (sourceCountError) fail("paris_source_count", sourceCountError);
+
+  const { data: parisSources, error: parisSourcesError } = await admin
+    .from("travel_sources")
+    .select("id")
+    .eq("destination_key", "paris");
+  if (parisSourcesError) fail("paris_sources", parisSourcesError);
+
+  const sourceIds = (parisSources ?? []).map((source) => source.id);
+  let parisChunkCount = 0;
+  if (sourceIds.length > 0) {
+    const { count, error: chunkCountError } = await admin
+      .from("travel_document_chunks")
+      .select("id", { count: "exact", head: true })
+      .in("source_id", sourceIds);
+    if (chunkCountError) fail("paris_chunk_count", chunkCountError);
+    parisChunkCount = count ?? 0;
   }
 
-  if (ingestion.source_status.wikivoyage === "failed") {
-    print("wikivoyage_ingestion", "failed");
-  } else if (ingestion.reused_existing) {
-    print("wikivoyage_ingestion", "skipped (fresh cache)");
-  } else {
-    print(
-      "wikivoyage_ingestion",
-      ingestion.source_status.wikivoyage === "ok" ? "passed" : "skipped",
-    );
+  print("paris_source_rows", parisSourceCount ?? 0);
+  print("paris_chunk_rows", parisChunkCount);
+
+  if ((parisSourceCount ?? 0) < 1) {
+    fail("paris_source_rows", "Expected at least one Paris travel_sources row");
+  }
+  if (parisChunkCount < 2) {
+    fail("paris_chunk_rows", "Expected multiple Paris travel_document_chunks");
   }
 
   const plannerInput: TripPlannerInput = {
@@ -122,25 +130,32 @@ async function main() {
 
   let retrieval;
   try {
-    // Smoke test has no user session; admin bypasses RLS for read-only RPC verify.
     retrieval = await retrieveTravelContextWithClient(admin, plannerInput);
   } catch (error) {
     fail("retrieval", error);
   }
 
   print("retrieved_chunk_count", retrieval.chunks.length);
+  print("unique_sources_count", retrieval.uniqueSourceCount);
   print("citation_ids", retrieval.citationKeys.join(", "));
+
+  for (const chunk of retrieval.chunks) {
+    if (!chunk.travel_chunk_id || !chunk.travel_source_id) {
+      fail("retrieval", "Retrieved chunk missing chunk/source ids");
+    }
+    if (!sourceIds.includes(chunk.travel_source_id)) {
+      fail(
+        "retrieval",
+        `Retrieved source_id ${chunk.travel_source_id} not in Paris travel_sources`,
+      );
+    }
+  }
 
   console.log("top_source_titles:");
   for (const chunk of retrieval.chunks.slice(0, 8)) {
     console.log(
-      `  - ${chunk.source_title} (${chunk.source_type}) sim=${chunk.similarity.toFixed(3)} [${chunk.citation_key}]`,
+      `  - ${chunk.source_title} (${chunk.source_type}) sim=${chunk.similarity.toFixed(3)} chunk=${chunk.travel_chunk_id.slice(0, 8)}…`,
     );
-  }
-
-  console.log("similarity_scores:");
-  for (const chunk of retrieval.chunks) {
-    console.log(`  - ${chunk.citation_key}: ${chunk.similarity.toFixed(4)}`);
   }
 
   try {
@@ -208,6 +223,7 @@ async function main() {
     }
 
     print("citation_validation", "passed");
+    print("citation_count", retrieval.citationKeys.length);
   } catch (error) {
     fail("citation_validation", error);
   }
