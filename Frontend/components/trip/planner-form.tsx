@@ -45,6 +45,7 @@ import type { TripPlannerFormValues } from "@/types/planner";
 
 const DEFAULT_VALUES: TripPlannerFormValues = {
   destination: "Kyoto, Japan",
+  startDate: null,
   days: 5,
   budget: 3200,
   currency: "USD",
@@ -62,6 +63,7 @@ const DEFAULT_VALUES: TripPlannerFormValues = {
 
 const RESET_VALUES: TripPlannerFormValues = {
   destination: "",
+  startDate: null,
   days: 5,
   budget: 1000,
   currency: "USD",
@@ -269,6 +271,25 @@ export function PlannerForm() {
             />
           </div>
         ) : null}
+
+        <FormField
+          id={`${formId}-start-date`}
+          label="Travel start date"
+          description="Optional. Needed for weather-aware planning."
+          error={errors.startDate?.message}
+        >
+          <Input
+            id={`${formId}-start-date`}
+            type="date"
+            aria-invalid={errors.startDate ? true : undefined}
+            {...register("startDate", {
+              setValueAs: (value) =>
+                typeof value === "string" && value.trim() === ""
+                  ? null
+                  : value,
+            })}
+          />
+        </FormField>
 
         <FormField
           id={`${formId}-days`}

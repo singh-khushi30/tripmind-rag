@@ -18,6 +18,7 @@ import {
 } from "@/lib/rag/citations";
 import { ragLog } from "@/lib/rag/log";
 import { createClient } from "@/lib/supabase/server";
+import { enrichItineraryAdaptive } from "@/lib/trip/enrich-adaptive";
 import { toTripPlannerInput } from "@/lib/trips/mappers";
 import { tripPlannerSchema } from "@/lib/validation/trip-planner";
 import type { TripStatus } from "@/types/database";
@@ -64,6 +65,7 @@ export async function createTripAction(
   }
 
   const plannerInput = toTripPlannerInput(values);
+  const startDate = plannerInput.start_date;
 
   let generation;
   try {
@@ -80,7 +82,7 @@ export async function createTripAction(
     .insert({
       user_id: user.id,
       destination: values.destination.trim(),
-      start_date: null,
+      start_date: startDate,
       number_of_days: values.days,
       budget: values.budget,
       currency: values.currency,
@@ -153,6 +155,47 @@ export async function createTripAction(
 
     finalItinerary = geocoded.itinerary;
 
+    try {
+      const enriched = await enrichItineraryAdaptive({
+        itinerary: finalItinerary,
+        planner: plannerInput,
+      });
+      finalItinerary = enriched.itinerary;
+
+      if (enriched.weatherDays.length > 0) {
+        const weatherRows = enriched.weatherDays.map((day) => ({
+          trip_id: data.id,
+          day_number: day.day_number,
+          forecast_date: day.forecast_date,
+          weather_status: day.weather_status,
+          temp_min: day.temp_min,
+          temp_max: day.temp_max,
+          precipitation_probability: day.precipitation_probability,
+          precipitation_amount: day.precipitation_amount,
+          weather_code: day.weather_code,
+          summary: day.summary,
+          category: day.category,
+        }));
+        const { error: weatherError } = await supabase
+          .from("trip_day_weather")
+          .upsert(weatherRows, { onConflict: "trip_id,day_number" });
+        if (weatherError) {
+          ragLog("weather.save_failed", {
+            trip_id: data.id,
+            message: weatherError.message.slice(0, 160),
+          });
+        }
+      }
+    } catch (enrichError) {
+      ragLog("adaptive.enrich_skipped", {
+        trip_id: data.id,
+        message:
+          enrichError instanceof Error
+            ? enrichError.message.slice(0, 160)
+            : "unknown_enrich_error",
+      });
+    }
+
     const { error: itineraryUpdateError } = await supabase
       .from("trips")
       .update({ itinerary_data: finalItinerary })
@@ -170,7 +213,6 @@ export async function createTripAction(
         .insert(geocoded.locations);
 
       if (locationInsertError) {
-        // Common when migration 004 has not been applied yet.
         ragLog("geocode.locations_insert_failed", {
           trip_id: data.id,
           message: locationInsertError.message.slice(0, 160),
@@ -186,7 +228,6 @@ export async function createTripAction(
     });
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    // Geocoding is best-effort — trip remains usable without coordinates.
     ragLog("geocode.skipped", {
       trip_id: data.id,
       message:

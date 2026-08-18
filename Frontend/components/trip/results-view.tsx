@@ -21,20 +21,44 @@ type ResultsViewProps = {
 };
 
 function getDemoTrip(): TripResult {
+  const startDate = new Date().toISOString().slice(0, 10);
   const itinerary: ItineraryData = {
     destination: "Kyoto",
     country: "Japan",
     summary:
       "A calm, culture-rich Kyoto itinerary balancing temples, seasonal gardens, and neighborhood food walks.",
     currency: "USD",
-    estimated_total_cost: 1450,
+    display_currency: "USD",
+    destination_local_currency: "JPY",
+    conversion_status: "estimated",
+    estimated_total_cost: 35,
     budget_status: "within_budget",
+    weather_meta: {
+      status: "available",
+      message: null,
+    },
+    budget_meta: {
+      warning: "You have approximately $3,165 remaining for flexibility.",
+      exchange_rate: 0.0068,
+      exchange_status: "live_or_latest",
+      extended_status: "comfortably_within_budget",
+      daily_average: 35,
+    },
     days: [
       {
         day_number: 1,
         title: "Temples and quiet lanes",
         summary: "Ease into Kyoto with classic temple walks and a local lunch.",
-        estimated_day_cost: 180,
+        estimated_day_cost: 35,
+        calendar_date: startDate,
+        weather: {
+          weather_status: "available",
+          temp_min: 22,
+          temp_max: 31,
+          precipitation_probability: 20,
+          summary: "Mostly clear · warm afternoon",
+          category: "clear",
+        },
         activities: [
           {
             start_time: "09:00",
@@ -42,7 +66,8 @@ function getDemoTrip(): TripResult {
             description:
               "Start with hillside temple views and a stroll through nearby pottery streets.",
             category: "Culture",
-            estimated_cost: 10,
+            estimated_cost: 400,
+            estimated_cost_display: 3,
             duration_minutes: 120,
             location_name: "Kiyomizu-dera",
             neighborhood: "Higashiyama",
@@ -50,6 +75,11 @@ function getDemoTrip(): TripResult {
             reservation_required: false,
             notes: null,
             citation_ids: [],
+            latitude: 34.9949,
+            longitude: 135.785,
+            location_display_name: "Kiyomizu-dera, Kyoto",
+            location_confidence: "exact",
+            weather_fit: "good",
           },
           {
             start_time: "12:30",
@@ -57,7 +87,8 @@ function getDemoTrip(): TripResult {
             description:
               "Take a relaxed lunch break with local dishes near the temple approach.",
             category: "Food",
-            estimated_cost: 25,
+            estimated_cost: 1500,
+            estimated_cost_display: 10,
             duration_minutes: 75,
             location_name: "Higashiyama lunch street",
             neighborhood: "Higashiyama",
@@ -65,6 +96,11 @@ function getDemoTrip(): TripResult {
             reservation_required: false,
             notes: "Confirm dietary needs on arrival.",
             citation_ids: [],
+            latitude: 34.9985,
+            longitude: 135.7805,
+            location_display_name: "Higashiyama, Kyoto",
+            location_confidence: "approximate",
+            weather_fit: "good",
           },
         ],
       },
@@ -81,6 +117,7 @@ function getDemoTrip(): TripResult {
     travelStyle: "mid-range",
     pace: "moderate",
     interests: ["culture", "food", "photography"],
+    startDate,
     budget: {
       total: 3200,
       currency: "USD",
@@ -89,8 +126,16 @@ function getDemoTrip(): TripResult {
       perPerson: Math.round(itinerary.estimated_total_cost / 2),
       remainingBudget: 3200 - itinerary.estimated_total_cost,
       percentageUsed: (itinerary.estimated_total_cost / 3200) * 100,
-      conversionStatus: "not_required",
+      conversionStatus: "estimated",
       destinationLocalCurrency: "JPY",
+      exchangeRate: 0.0068,
+      exchangeStatus: "live_or_latest",
+      extendedStatus: "comfortably_within_budget",
+      warning: itinerary.budget_meta?.warning ?? null,
+    },
+    weather: {
+      status: "available",
+      message: null,
     },
     itinerary: itinerary.days,
     citations: [],
@@ -137,12 +182,39 @@ export function ResultsView({
   return <ResultsReady trip={trip ?? getDemoTrip()} />;
 }
 
-function ResultsReady({ trip }: { trip: TripResult }) {
+function ResultsReady({ trip: initialTrip }: { trip: TripResult }) {
+  const [trip, setTrip] = useState(initialTrip);
   const citations = trip.citations ?? [];
   const citationsByKey = new Map<string, TripCitationSource>(
     citations.map((citation) => [citation.citation_key, citation]),
   );
-
+  const startDateMissing = !trip.startDate;
+  const weatherStatus = trip.weather?.status ?? "no_start_date";
+  const firstWeatherDay = trip.itinerary.find(
+    (day) =>
+      day.weather &&
+      (day.weather.summary ||
+        day.weather.temp_max != null ||
+        day.weather.temp_min != null),
+  );
+  const weatherLabel =
+    weatherStatus === "available"
+      ? firstWeatherDay?.weather?.summary
+        ? firstWeatherDay.weather.summary
+        : "Weather available"
+      : weatherStatus === "no_start_date"
+        ? "Weather unavailable — add travel dates"
+        : "Weather unavailable";
+  const weatherDetail =
+    firstWeatherDay?.weather &&
+    firstWeatherDay.weather.temp_min != null &&
+    firstWeatherDay.weather.temp_max != null
+      ? `Day ${firstWeatherDay.day_number}: ${Math.round(firstWeatherDay.weather.temp_min)}–${Math.round(firstWeatherDay.weather.temp_max)}°C${
+          firstWeatherDay.weather.precipitation_probability != null
+            ? ` · ${Math.round(firstWeatherDay.weather.precipitation_probability)}% rain`
+            : ""
+        }`
+      : trip.weather?.message;
   return (
     <Container className="space-y-8 py-10">
       <div className="space-y-2">
@@ -166,6 +238,40 @@ function ResultsReady({ trip }: { trip: TripResult }) {
         travel information. Prices and availability remain estimates.
       </div>
 
+      <div className="border-border/80 bg-card/40 grid gap-3 rounded-2xl border px-4 py-4 text-sm sm:grid-cols-3">
+        <div>
+          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+            Currency
+          </p>
+          <p className="text-foreground mt-1">
+            Local {trip.budget.destinationLocalCurrency ?? "—"} · Display{" "}
+            {trip.budget.currency}
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Exchange: {trip.budget.exchangeStatus ?? trip.budget.conversionStatus ?? "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+            Weather
+          </p>
+          <p className="text-foreground mt-1">{weatherLabel}</p>
+          {weatherDetail ? (
+            <p className="text-muted-foreground mt-1 text-xs">{weatherDetail}</p>
+          ) : null}
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+            Utilization
+          </p>
+          <p className="text-foreground mt-1">
+            {typeof trip.budget.percentageUsed === "number"
+              ? `${Math.round(trip.budget.percentageUsed)}% of budget`
+              : "—"}
+          </p>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <TripSummaryCard trip={trip} />
         <BudgetCard trip={trip} />
@@ -173,9 +279,49 @@ function ResultsReady({ trip }: { trip: TripResult }) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <DayTimeline
+          tripId={trip.id.startsWith("trip_demo") ? undefined : trip.id}
           days={trip.itinerary}
           currency={trip.budget.currency}
+          localCurrency={trip.budget.destinationLocalCurrency}
+          startDateMissing={startDateMissing}
           citationsByKey={citationsByKey}
+          onItineraryUpdate={(itinerary) => {
+            setTrip((current) => ({
+              ...current,
+              itinerary: itinerary.days,
+              budget: {
+                ...current.budget,
+                estimatedTotalCost: itinerary.estimated_total_cost,
+                budgetStatus: itinerary.budget_status,
+                remainingBudget: itinerary.budget_totals?.remaining_budget,
+                percentageUsed: itinerary.budget_totals?.percentage_used,
+                perPerson:
+                  itinerary.budget_totals?.cost_per_traveler ??
+                  current.budget.perPerson,
+                warning: itinerary.budget_meta?.warning ?? current.budget.warning,
+                exchangeRate:
+                  itinerary.budget_meta?.exchange_rate ??
+                  current.budget.exchangeRate,
+                exchangeStatus:
+                  itinerary.budget_meta?.exchange_status ??
+                  current.budget.exchangeStatus,
+                extendedStatus:
+                  itinerary.budget_meta?.extended_status ??
+                  current.budget.extendedStatus,
+                destinationLocalCurrency:
+                  itinerary.destination_local_currency ??
+                  current.budget.destinationLocalCurrency,
+                conversionStatus:
+                  itinerary.conversion_status ?? current.budget.conversionStatus,
+              },
+              weather: itinerary.weather_meta
+                ? {
+                    status: itinerary.weather_meta.status,
+                    message: itinerary.weather_meta.message ?? null,
+                  }
+                : current.weather,
+            }));
+          }}
         />
         <aside className="space-y-4 lg:sticky lg:top-24">
           <TripMapPanel

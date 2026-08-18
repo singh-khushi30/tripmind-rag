@@ -159,6 +159,43 @@ export type TripActivityLocationInsert = Omit<
   created_at?: string;
 };
 
+export type TripDayWeather = {
+  id: string;
+  trip_id: string;
+  day_number: number;
+  forecast_date: string;
+  weather_status: string;
+  temp_min: number | null;
+  temp_max: number | null;
+  precipitation_probability: number | null;
+  precipitation_amount: number | null;
+  weather_code: number | null;
+  summary: string | null;
+  category: string | null;
+  fetched_at: string;
+};
+
+export type TripDayWeatherInsert = Omit<TripDayWeather, "id" | "fetched_at"> & {
+  id?: string;
+  fetched_at?: string;
+};
+
+export type TripRevision = {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  day_number: number;
+  reason: string;
+  previous_day: unknown;
+  updated_day: unknown;
+  created_at: string;
+};
+
+export type TripRevisionInsert = Omit<TripRevision, "id" | "created_at"> & {
+  id?: string;
+  created_at?: string;
+};
+
 export type MatchTravelDocumentRow = {
   id: string;
   source_id: string;
@@ -209,6 +246,18 @@ export type Database = {
         Row: TripActivityLocation;
         Insert: TripActivityLocationInsert;
         Update: Partial<TripActivityLocationInsert>;
+        Relationships: [];
+      };
+      trip_day_weather: {
+        Row: TripDayWeather;
+        Insert: TripDayWeatherInsert;
+        Update: Partial<TripDayWeatherInsert>;
+        Relationships: [];
+      };
+      trip_revisions: {
+        Row: TripRevision;
+        Insert: TripRevisionInsert;
+        Update: Partial<TripRevisionInsert>;
         Relationships: [];
       };
     };

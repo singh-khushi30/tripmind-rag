@@ -33,6 +33,12 @@ export const tripPlannerSchema = z.object({
     .trim()
     .min(1, "Destination is required")
     .min(2, "Destination must be at least 2 characters"),
+  startDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be YYYY-MM-DD")
+    .nullable()
+    .optional(),
   days: z
     .number({ error: "Number of days is required" })
     .int("Days must be a whole number")

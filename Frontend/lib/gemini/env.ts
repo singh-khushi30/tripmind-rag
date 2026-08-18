@@ -14,8 +14,8 @@ export function isMockItineraryEnabled(): boolean {
   return process.env.USE_MOCK_ITINERARY?.trim().toLowerCase() === "true";
 }
 
-// gemini-2.5-flash is blocked for many new API keys; use the stable latest alias.
+// Prefer an explicit current flash model via GEMINI_MODEL when aliases are busy/retired.
 export const GEMINI_MODEL =
-  process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
+  process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
 
 export const GEMINI_TIMEOUT_MS = 60_000;

@@ -1,5 +1,6 @@
 import type { ItineraryData, ItineraryDay } from "@/lib/gemini/schema";
 import type { TripPlannerInput } from "@/lib/gemini/types";
+import { resolveLocalCurrency } from "@/lib/currency/local-currency";
 import type { TravelStyle } from "@/types/trip";
 
 export type BudgetAllocationGuidance = {
@@ -124,10 +125,15 @@ export function reconcileItineraryBudget(
 
   const withDays = { ...itinerary, days };
   const totals = calculateBudgetTotals(withDays, input);
+  // Prefer deterministic mapping over Gemini's currency claim — models often
+  // copy the display currency into destination_local_currency by mistake.
+  const localCurrency =
+    resolveLocalCurrency(itinerary.destination, itinerary.country) ??
+    itinerary.destination_local_currency ??
+    null;
   const conversionStatus =
     itinerary.conversion_status ??
-    (itinerary.destination_local_currency &&
-    itinerary.destination_local_currency !== input.currency
+    (localCurrency && localCurrency !== input.currency
       ? "estimated"
       : "not_required");
 
@@ -135,9 +141,9 @@ export function reconcileItineraryBudget(
     ...withDays,
     currency: input.currency,
     display_currency: input.currency,
-    destination_local_currency:
-      itinerary.destination_local_currency ?? null,
+    destination_local_currency: localCurrency,
     conversion_status: conversionStatus,
+    // Provisional total in local currency units until FX enrichment converts.
     estimated_total_cost: totals.calculated_total,
     budget_status: budgetStatusFromTotals(totals.calculated_total, input.budget),
     budget_totals: totals,

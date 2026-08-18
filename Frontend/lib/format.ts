@@ -2,7 +2,7 @@ import type { Currency } from "@/types/trip";
 
 export function formatCurrency(
   amount: number,
-  currency: Currency,
+  currency: Currency | string,
   options?: Intl.NumberFormatOptions,
 ) {
   return new Intl.NumberFormat("en-US", {

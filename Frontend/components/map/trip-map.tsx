@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -92,11 +92,12 @@ export function TripMap({
   warnings = [],
   className,
 }: TripMapProps) {
-  // Avoid react-leaflet "Map container is already initialized" under Strict Mode.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Avoid react-leaflet "Map container is already initialized" under Strict Mode / SSR.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const markers = useMemo(
     () => collectVisibleMapMarkers(days, selectedDay),

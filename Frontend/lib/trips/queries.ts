@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Trip, TripStatus } from "@/types/database";
+import type { Trip, TripDayWeather, TripStatus } from "@/types/database";
 import type { TripCitationView } from "@/types/trip";
 
 export async function getCurrentUserOrNull() {
@@ -43,6 +43,22 @@ export async function getUserTripById(id: string): Promise<Trip | null> {
   }
 
   return (data as Trip | null) ?? null;
+}
+
+export async function getTripDayWeather(
+  tripId: string,
+): Promise<TripDayWeather[]> {
+  const { supabase, user } = await getCurrentUserOrNull();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("trip_day_weather")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("day_number", { ascending: true });
+
+  if (error) return [];
+  return (data ?? []) as TripDayWeather[];
 }
 
 export async function getTripCitations(tripId: string): Promise<TripCitationView[]> {

@@ -9,6 +9,8 @@ import type {
 
 export type TripPlannerFormValues = {
   destination: string;
+  /** ISO date YYYY-MM-DD when known; optional for weather-aware planning. */
+  startDate?: string | null;
   days: number;
   budget: number;
   currency: Currency;

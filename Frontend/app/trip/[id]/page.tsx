@@ -4,9 +4,15 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/layout/container";
 import { ErrorState } from "@/components/states/error-state";
 import { ResultsView } from "@/components/trip/results-view";
+import { itineraryDataSchema } from "@/lib/gemini/schema";
 import { ensureTripLocations } from "@/lib/maps/ensure-trip-locations";
 import { tripToTripResult } from "@/lib/trips/mappers";
-import { getTripCitations, getUserTripById } from "@/lib/trips/queries";
+import {
+  getTripCitations,
+  getTripDayWeather,
+  getUserTripById,
+} from "@/lib/trips/queries";
+import { mergeTripDayWeatherIntoItinerary } from "@/lib/weather/merge-trip-weather";
 import type { Trip } from "@/types/database";
 
 type TripPageProps = {
@@ -66,6 +72,28 @@ export default async function TripPage({ params }: TripPageProps) {
     citations = await getTripCitations(id);
   } catch {
     citations = [];
+  }
+
+  try {
+    const weatherRows = await getTripDayWeather(id);
+    if (weatherRows.length > 0) {
+      const parsed = itineraryDataSchema.safeParse(trip.itinerary_data);
+      const base = parsed.success
+        ? parsed.data
+        : trip.itinerary_data &&
+            typeof trip.itinerary_data === "object" &&
+            Array.isArray((trip.itinerary_data as { days?: unknown }).days)
+          ? trip.itinerary_data
+          : null;
+      if (base?.days?.length) {
+        trip = {
+          ...trip,
+          itinerary_data: mergeTripDayWeatherIntoItinerary(base, weatherRows),
+        };
+      }
+    }
+  } catch {
+    // Weather hydrate is optional.
   }
 
   return (

@@ -6,11 +6,11 @@ import {
   TripGenerationError,
 } from "@/lib/gemini/errors";
 import {
-  GEMINI_MODEL,
   GEMINI_TIMEOUT_MS,
   isMockItineraryEnabled,
 } from "@/lib/gemini/env";
 import { buildMockItineraryData } from "@/lib/gemini/mock-itinerary";
+import { withGeminiModelFallback } from "@/lib/gemini/model-fallback";
 import {
   buildItineraryUserPrompt,
   ITINERARY_SYSTEM_INSTRUCTION,
@@ -20,6 +20,7 @@ import type { TripPlannerInput } from "@/lib/gemini/types";
 import { parseAndValidateItinerary } from "@/lib/gemini/validate-itinerary";
 import { assertValidCitationIds } from "@/lib/rag/citations";
 import { ingestDestination } from "@/lib/rag/ingest-destination";
+import { ragLog } from "@/lib/rag/log";
 import {
   retrieveTravelContext,
   type TravelRetrievalResult,
@@ -73,36 +74,60 @@ export async function generateTripItinerary(
     };
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
-
   try {
     await ingestDestination(input.destination);
     const retrieval = await retrieveTravelContext(input);
-
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: buildItineraryUserPrompt(input, retrieval.contextBlock),
-      config: {
-        systemInstruction: ITINERARY_SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseJsonSchema: getItineraryJsonSchema(),
-        abortSignal: controller.signal,
-        httpOptions: {
-          timeout: GEMINI_TIMEOUT_MS,
-        },
-        temperature: 0.7,
+    const prompt = buildItineraryUserPrompt(input, retrieval.contextBlock);
+
+    const { text, model } = await withGeminiModelFallback({
+      maxAttemptsPerModel: 2,
+      retryDelayMs: 1000,
+      onAttemptError: ({ model: failedModel, attempt, error }) => {
+        ragLog("gemini.generate.retry", {
+          model: failedModel,
+          attempt,
+          code: error.code,
+          message: error.message.slice(0, 120),
+        });
+      },
+      run: async (model) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(
+          () => controller.abort(),
+          GEMINI_TIMEOUT_MS,
+        );
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction: ITINERARY_SYSTEM_INSTRUCTION,
+              responseMimeType: "application/json",
+              responseJsonSchema: getItineraryJsonSchema(),
+              abortSignal: controller.signal,
+              httpOptions: {
+                timeout: GEMINI_TIMEOUT_MS,
+              },
+              temperature: 0.7,
+            },
+          });
+
+          const text = response.text?.trim();
+          if (!text) {
+            throw new TripGenerationError(
+              "EMPTY_RESPONSE",
+              "Gemini returned an empty response",
+            );
+          }
+          return { text, model };
+        } finally {
+          clearTimeout(timeout);
+        }
       },
     });
 
-    const text = response.text?.trim();
-    if (!text) {
-      throw new TripGenerationError(
-        "EMPTY_RESPONSE",
-        "Gemini returned an empty response",
-      );
-    }
+    ragLog("gemini.generate.success", { model });
 
     let json: unknown;
     try {
@@ -138,7 +163,5 @@ export async function generateTripItinerary(
     };
   } catch (error) {
     throw toTripPipelineError(error);
-  } finally {
-    clearTimeout(timeout);
   }
 }

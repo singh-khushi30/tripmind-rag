@@ -9,6 +9,7 @@ import type { Currency, ItineraryActivity, TripCitationSource } from "@/types/tr
 type ActivityCardProps = {
   activity: ItineraryActivity;
   currency: Currency;
+  localCurrency?: string | null;
   citationsByKey?: Map<string, TripCitationSource>;
   className?: string;
 };
@@ -19,12 +20,27 @@ const INDOOR_OUTDOOR_LABEL = {
   mixed: "Indoor / outdoor",
 } as const;
 
+const WEATHER_FIT_LABEL = {
+  good: "Weather fit: good",
+  caution: "Weather: caution",
+  poor: "Weather: poor fit",
+  unavailable: "Weather: n/a",
+} as const;
+
 export function ActivityCard({
   activity,
   currency,
+  localCurrency,
   citationsByKey,
   className,
 }: ActivityCardProps) {
+  const displayCost =
+    activity.estimated_cost_display ?? activity.estimated_cost;
+  const showLocal =
+    Boolean(localCurrency) &&
+    localCurrency !== currency &&
+    activity.estimated_cost_display != null;
+
   return (
     <article
       className={cn(
@@ -56,6 +72,15 @@ export function ActivityCard({
           {activity.location_confidence === "unavailable" ? (
             <Badge variant="outline">Location unavailable</Badge>
           ) : null}
+          {activity.weather_fit ? (
+            <Badge
+              variant={
+                activity.weather_fit === "poor" ? "destructive" : "outline"
+              }
+            >
+              {WEATHER_FIT_LABEL[activity.weather_fit]}
+            </Badge>
+          ) : null}
           <Badge variant="secondary">{activity.category}</Badge>
           <Badge variant="outline">
             {INDOOR_OUTDOOR_LABEL[activity.indoor_outdoor]}
@@ -79,9 +104,11 @@ export function ActivityCard({
       <div className="text-muted-foreground mt-4 flex flex-wrap gap-4 text-xs">
         <span className="inline-flex items-center gap-1.5">
           <Coins className="size-3.5" />
-          {activity.estimated_cost === 0
+          {displayCost === 0
             ? "Free (estimate)"
-            : `${formatCurrency(activity.estimated_cost, currency)} (estimate)`}
+            : showLocal
+              ? `≈ ${formatCurrency(displayCost, currency)} · ${formatCurrency(activity.estimated_cost, localCurrency!)} local`
+              : `${formatCurrency(displayCost, currency)} (estimate)`}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Clock3 className="size-3.5" />

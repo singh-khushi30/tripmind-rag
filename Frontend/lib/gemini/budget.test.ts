@@ -127,4 +127,48 @@ describe("budget reconciliation", () => {
     );
     expect(reconciled.budget_status).toBe("within_budget");
   });
+
+  it("prefers deterministic local currency over Gemini display-currency mistakes", () => {
+    const kyotoInput: TripPlannerInput = {
+      ...input,
+      destination: "Kyoto, Japan",
+      currency: "USD",
+      budget: 3200,
+    };
+    const reconciled = reconcileItineraryBudget(
+      {
+        ...sampleItinerary(99999),
+        destination: "Kyoto",
+        country: "Japan",
+        // Gemini sometimes copies the user's display currency here incorrectly.
+        destination_local_currency: "USD",
+        currency: "USD",
+        days: [
+          {
+            day_number: 1,
+            title: "Temples",
+            summary: "Day in Kyoto",
+            estimated_day_cost: 12000,
+            activities: [
+              {
+                start_time: "10:00",
+                title: "Temple",
+                description: "Visit",
+                category: "Culture",
+                estimated_cost: 12000,
+                duration_minutes: 120,
+                location_name: "Temple",
+                neighborhood: null,
+                indoor_outdoor: "outdoor",
+                reservation_required: false,
+                notes: null,
+              },
+            ],
+          },
+        ],
+      },
+      kyotoInput,
+    );
+    expect(reconciled.destination_local_currency).toBe("JPY");
+  });
 });

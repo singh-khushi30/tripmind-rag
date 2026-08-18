@@ -16,13 +16,11 @@ Hard rules:
 - Never mix the destination with another unrelated city, state, or country.
 - Match the requested number of days exactly.
 - Respect the number of travelers.
-- Use the user’s requested display currency for every cost field.
-- Treat all prices as approximate estimates in that display currency. Do not claim live exchange rates.
-- Set destination_local_currency to the local currency code when known, otherwise null.
-- Set conversion_status to:
-  - not_required when display currency matches local currency or local currency is unknown
-  - estimated when values are rough conversions into the display currency
-  - unavailable when conversion cannot be reasonably estimated
+- Estimate every activity cost in the DESTINATION LOCAL CURRENCY (not the user's display currency).
+- Treat all prices as approximate estimates. Do not claim live exchange rates or converted totals.
+- Set destination_local_currency to the local ISO currency code when known, otherwise null.
+- Set currency and display_currency fields to the user's display currency code for metadata only; do not convert activity costs yourself.
+- Set conversion_status to not_required (the application performs conversion).
 - Keep costs appropriate to the selected travel style.
 - Avoid luxury dining prices for mid-range, budget, and backpacking trips.
 - Prefer well-known landmarks and generic meal recommendations when uncertain about a specific business.
@@ -83,8 +81,9 @@ export function buildItineraryUserPrompt(
     `Selected cities: ${cities}`,
     `Start date: ${input.start_date ?? "not specified"}`,
     `Number of days: ${input.number_of_days}`,
-    `Total budget: ${input.budget} ${input.currency}`,
+    `Total budget: ${input.budget} ${input.currency} (user display currency)`,
     `Display currency: ${input.currency}`,
+    "Estimate all activity estimated_cost values in the destination local currency. The application will convert to the display currency.",
     `Travelers: ${input.travelers}`,
     `Travel style: ${input.travel_style}`,
     `Travel pace: ${input.travel_pace}`,

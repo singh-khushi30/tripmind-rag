@@ -122,6 +122,7 @@ export type TripResult = {
   travelStyle: TravelStyle;
   pace: TravelPace;
   interests: Interest[];
+  startDate?: string | null;
   budget: {
     total: number;
     currency: Currency;
@@ -132,6 +133,15 @@ export type TripResult = {
     percentageUsed?: number;
     conversionStatus?: ConversionStatus;
     destinationLocalCurrency?: string | null;
+    exchangeRate?: number | null;
+    exchangeStatus?: string | null;
+    extendedStatus?: string | null;
+    warning?: string | null;
+    dailyAverage?: number | null;
+  };
+  weather?: {
+    status: string;
+    message?: string | null;
   };
   itinerary: ItineraryDay[];
   citations?: TripCitationSource[];
@@ -147,5 +157,5 @@ export type SavedTrip = {
   days: number;
   status?: string;
   coverTone?: "teal" | "slate" | "sand" | "mist";
-  imageKey?: "kyoto" | "lisbon" | "reykjavik" | "marrakech";
+  imageKey?: string;
 };

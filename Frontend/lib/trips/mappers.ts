@@ -16,9 +16,13 @@ export function toTripPlannerInput(
   form: TripPlannerFormValues,
   startDate?: string | null,
 ): TripPlannerInput {
+  const resolvedStart =
+    startDate ??
+    (form.startDate && form.startDate.trim() ? form.startDate.trim() : null);
+
   return {
     destination: form.destination.trim(),
-    start_date: startDate ?? null,
+    start_date: resolvedStart,
     number_of_days: form.days,
     budget: form.budget,
     currency: form.currency,
@@ -86,6 +90,26 @@ export function tripToTripResult(
               ? raw.budget_status
               : "within_budget") as ItineraryData["budget_status"],
           days: (Array.isArray(raw.days) ? raw.days : []) as ItineraryData["days"],
+          destination_local_currency:
+            typeof raw.destination_local_currency === "string"
+              ? raw.destination_local_currency
+              : null,
+          conversion_status:
+            typeof raw.conversion_status === "string"
+              ? (raw.conversion_status as ItineraryData["conversion_status"])
+              : undefined,
+          budget_totals:
+            raw.budget_totals && typeof raw.budget_totals === "object"
+              ? (raw.budget_totals as ItineraryData["budget_totals"])
+              : undefined,
+          budget_meta:
+            raw.budget_meta && typeof raw.budget_meta === "object"
+              ? (raw.budget_meta as ItineraryData["budget_meta"])
+              : undefined,
+          weather_meta:
+            raw.weather_meta && typeof raw.weather_meta === "object"
+              ? (raw.weather_meta as ItineraryData["weather_meta"])
+              : undefined,
           route_meta:
             raw.route_meta && typeof raw.route_meta === "object"
               ? (raw.route_meta as ItineraryData["route_meta"])
@@ -109,6 +133,7 @@ export function tripToTripResult(
     travelStyle: trip.travel_style,
     pace: trip.travel_pace,
     interests: trip.interests ?? [],
+    startDate: trip.start_date,
     budget: {
       total: Number(trip.budget),
       currency,
@@ -121,7 +146,18 @@ export function tripToTripResult(
       percentageUsed: totals?.percentage_used,
       conversionStatus: data?.conversion_status ?? "unavailable",
       destinationLocalCurrency: data?.destination_local_currency ?? null,
+      exchangeRate: data?.budget_meta?.exchange_rate ?? null,
+      exchangeStatus: data?.budget_meta?.exchange_status ?? null,
+      extendedStatus: data?.budget_meta?.extended_status ?? null,
+      warning: data?.budget_meta?.warning ?? null,
+      dailyAverage: data?.budget_meta?.daily_average ?? null,
     },
+    weather: data?.weather_meta
+      ? {
+          status: data.weather_meta.status,
+          message: data.weather_meta.message ?? null,
+        }
+      : undefined,
     itinerary: (data?.days ?? []) as TripResult["itinerary"],
     citations: tripCitationsToSources(citations),
     routeWarnings: Array.isArray(data?.route_meta?.warnings)

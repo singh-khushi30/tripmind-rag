@@ -1,8 +1,5 @@
 import { requiresDestinationClarification } from "@/lib/destinations/broad-destination";
-import {
-  isWithinStyleBudget,
-  reconcileItineraryBudget,
-} from "@/lib/gemini/budget";
+import { reconcileItineraryBudget } from "@/lib/gemini/budget";
 import { TripGenerationError } from "@/lib/gemini/errors";
 import {
   geminiItineraryResponseSchema,
@@ -278,6 +275,8 @@ export function parseAndValidateItinerary(
     ? geminiItineraryResponseSchema
     : itineraryDataSchema.omit({
         budget_totals: true,
+        budget_meta: true,
+        weather_meta: true,
         grounding: true,
       });
 
@@ -303,22 +302,10 @@ export function parseAndValidateItinerary(
   };
 
   const safeguarded = assertItinerarySafeguards(withCitationDefaults, input, options);
-  const reconciled = reconcileItineraryBudget(safeguarded, input);
-
-  if (
-    !isWithinStyleBudget(
-      input.travel_style,
-      reconciled.estimated_total_cost,
-      input.budget,
-    )
-  ) {
-    throw new TripGenerationError(
-      "INVALID_RESPONSE",
-      "Generated itinerary exceeds the selected budget for this travel style",
-    );
-  }
-
-  return reconciled;
+  // Do not reject generation based on raw activity sums vs display budget.
+  // Costs may be in local currency and final utilization is computed after FX
+  // in enrichItineraryAdaptive (status + warnings shown in the UI).
+  return reconcileItineraryBudget(safeguarded, input);
 }
 
 export function assertItinerarySafeguards(
