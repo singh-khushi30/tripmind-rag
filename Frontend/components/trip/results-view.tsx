@@ -10,6 +10,7 @@ import { TripResultsSkeleton } from "@/components/loading/trip-results-skeleton"
 import { TripMapPanel } from "@/components/map/trip-map-panel";
 import { ErrorState } from "@/components/states/error-state";
 import { DayTimeline } from "@/components/trip/day-timeline";
+import { ExportPdfButton } from "@/components/trip/export-pdf-button";
 import { SourcesUsedPanel } from "@/components/trip/sources-used-panel";
 import type { ItineraryData } from "@/lib/gemini/schema";
 import type { RouteWarning } from "@/lib/maps/validate-route";
@@ -217,17 +218,22 @@ function ResultsReady({ trip: initialTrip }: { trip: TripResult }) {
       : trip.weather?.message;
   return (
     <Container className="space-y-8 py-10">
-      <div className="space-y-2">
-        <p className="text-brand text-xs font-medium tracking-[0.16em] uppercase">
-          Generated itinerary
-        </p>
-        <h1 className="font-heading text-foreground text-4xl tracking-tight sm:text-5xl">
-          Your trip preview
-        </h1>
-        <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed sm:text-base">
-          A personalized itinerary designed around your budget, interests, and
-          travel pace.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-brand text-xs font-medium tracking-[0.16em] uppercase">
+            Generated itinerary
+          </p>
+          <h1 className="font-heading text-foreground text-4xl tracking-tight sm:text-5xl">
+            Your trip preview
+          </h1>
+          <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed sm:text-base">
+            A personalized itinerary designed around your budget, interests, and
+            travel pace.
+          </p>
+        </div>
+        {!trip.id.startsWith("trip_demo") ? (
+          <ExportPdfButton tripId={trip.id} />
+        ) : null}
       </div>
 
       <div
