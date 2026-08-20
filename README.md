@@ -2,10 +2,14 @@
 
 **AI-powered travel planning with retrieval-augmented generation, verified sources, maps, weather, and budget-aware itineraries.**
 
+## 🚀 Live Demo
+
+**Production:** https://tripmind-rag.vercel.app
+
 TripMind helps travelers build personalized day-by-day trip plans grounded in Wikipedia and Wikivoyage—not unconstrained LLM guesses.
 
 <p align="center">
-  <a href="#demo"><img src="https://img.shields.io/badge/Live%20Demo-TODO-lightgrey?style=for-the-badge" alt="Live Demo" /></a>
+  <a href="https://tripmind-rag.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-tripmind--rag.vercel.app-00C7B7?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" /></a>
   <a href="https://github.com/singh-khushi30/tripmind-rag"><img src="https://img.shields.io/badge/GitHub-tripmind--rag-181717?style=for-the-badge&logo=github" alt="GitHub" /></a>
   <a href="#license"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" /></a>
 </p>
@@ -26,6 +30,7 @@ TripMind helps travelers build personalized day-by-day trip plans grounded in Wi
 
 ## Table of contents
 
+- [Live Demo](#-live-demo)
 - [Overview](#overview)
 - [Demo](#demo)
 - [Features](#features)
@@ -133,7 +138,11 @@ The model still proposes structure and sequencing; factual place guidance is anc
 
 ### Live demo
 
-**TODO:** Add production URL (intended deployment target: Vercel).
+The application is live and can be accessed here:
+
+https://tripmind-rag.vercel.app
+
+You can create a free account using email authentication and generate personalized AI-powered travel itineraries.
 
 ### Local preview
 
@@ -1119,13 +1128,13 @@ From `Frontend/`:
 
 ### Deploy (Vercel)
 
-**TODO:** Document the exact Vercel project URL after first production deploy.
+**Production:** https://tripmind-rag.vercel.app
 
 Typical setup:
 
 1. Set Root Directory to `Frontend` (or deploy from that folder)
 2. Configure the env vars above in the Vercel project
-3. Ensure Supabase Auth redirect URLs include the production origin
+3. Ensure Supabase Auth redirect URLs include the production origin (`https://tripmind-rag.vercel.app`)
 4. Run SQL migrations before generating trips in production
 
 ---
