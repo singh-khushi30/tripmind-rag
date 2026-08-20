@@ -33,15 +33,15 @@ type TripMapProps = {
 function numberedIcon(order: number, approximate: boolean) {
   return L.divIcon({
     className: "tripmind-map-marker",
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -12],
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -14],
     html: `<div style="
-      width:28px;height:28px;border-radius:9999px;
+      width:30px;height:30px;border-radius:9999px;
       display:flex;align-items:center;justify-content:center;
-      background:${approximate ? "#c4a574" : "#1f6f8b"};
+      background:${approximate ? "oklch(0.72 0.08 75)" : "oklch(0.45 0.08 220)"};
       color:white;font:600 12px/1 ui-sans-serif,system-ui,sans-serif;
-      border:2px solid white;box-shadow:0 2px 8px rgba(15,23,42,0.25);
+      border:2px solid white;box-shadow:0 2px 10px rgba(15,23,42,0.22);
     ">${order}</div>`,
   });
 }
@@ -170,18 +170,19 @@ export function TripMap({
           "surface-card relative flex min-h-72 items-center justify-center overflow-hidden p-6",
           className,
         )}
+        role="status"
       >
         <div className="max-w-xs text-center">
           <div className="bg-secondary text-brand mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl">
-            <MapPin className="size-5" />
+            <MapPin className="size-5" aria-hidden />
           </div>
-          <p className="text-foreground text-sm font-medium">
-            Map coordinates unavailable
+          <p className="text-foreground text-sm font-medium tracking-tight">
+            Map not available yet
           </p>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            We couldn&apos;t verify exact locations for{" "}
-            {selectedDay === "all" ? destination : `day ${selectedDay}`} yet.
-            The itinerary is still usable without the map.
+            We couldn&apos;t place exact stops for{" "}
+            {selectedDay === "all" ? destination : `day ${selectedDay}`} on the
+            map. Your itinerary is still ready to use.
           </p>
         </div>
       </div>
@@ -192,11 +193,16 @@ export function TripMap({
     return (
       <div
         className={cn(
-          "surface-card flex min-h-72 items-center justify-center",
+          "surface-card flex min-h-72 flex-col items-center justify-center gap-3 p-6",
           className,
         )}
+        role="status"
+        aria-live="polite"
       >
-        <p className="text-muted-foreground text-sm">Loading map…</p>
+        <div className="bg-secondary/80 h-2 w-32 animate-pulse rounded-full" />
+        <p className="text-muted-foreground text-sm">
+          Loading your trip map…
+        </p>
       </div>
     );
   }
@@ -214,6 +220,7 @@ export function TripMap({
         zoom={12}
         scrollWheelZoom={false}
         className="z-0 h-80 w-full"
+        aria-label={`Map of ${destination}`}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -224,7 +231,7 @@ export function TripMap({
           <Polyline
             positions={route.polyline.map((point) => [point.lat, point.lng])}
             pathOptions={{
-              color: "#1f6f8b",
+              color: "oklch(0.45 0.08 220)",
               weight: 4,
               opacity: 0.75,
               dashArray: "8 10",
@@ -240,14 +247,18 @@ export function TripMap({
               icon={numberedIcon(marker.order, approximate)}
             >
               <Popup>
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium">{marker.time}</p>
-                  <p>{marker.title}</p>
-                  <p className="text-muted-foreground">{marker.location}</p>
-                  <p>{formatMoney(marker.estimatedCost, currency)}</p>
-                  <p className="text-xs tracking-wide uppercase">
+                <div className="min-w-[11rem] space-y-1.5 text-sm">
+                  <p className="text-[10px] font-medium tracking-[0.14em] text-slate-500 uppercase">
+                    {marker.time}
+                  </p>
+                  <p className="font-medium text-slate-900">{marker.title}</p>
+                  <p className="text-slate-600">{marker.location}</p>
+                  <p className="font-medium text-slate-800">
+                    {formatMoney(marker.estimatedCost, currency)}
+                  </p>
+                  <p className="text-[10px] tracking-wide text-slate-500 uppercase">
                     {approximate
-                      ? "Approximate neighborhood location"
+                      ? "Approximate neighborhood"
                       : "Verified location"}
                   </p>
                 </div>
@@ -263,8 +274,8 @@ export function TripMap({
               center={[marker.latitude, marker.longitude]}
               radius={18}
               pathOptions={{
-                color: "#c4a574",
-                fillColor: "#c4a574",
+                color: "oklch(0.72 0.08 75)",
+                fillColor: "oklch(0.72 0.08 75)",
                 fillOpacity: 0.12,
                 weight: 1,
               }}
@@ -273,15 +284,15 @@ export function TripMap({
       </MapContainer>
 
       <div className="absolute inset-x-0 bottom-0 z-[500] p-3">
-        <div className="space-y-2 rounded-2xl bg-white/92 px-3 py-2.5 shadow-[var(--shadow-soft)] backdrop-blur">
+        <div className="border-border/60 bg-card/95 space-y-2 rounded-2xl border px-3 py-2.5 shadow-[var(--shadow-soft)] backdrop-blur">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-foreground text-sm font-medium">
+              <p className="text-foreground text-sm font-medium tracking-tight">
                 {selectedDay === "all"
                   ? destination
                   : `Day ${selectedDay} route`}
               </p>
-              <p className="text-muted-foreground mt-0.5 text-xs">
+              <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
                 {route
                   ? `~${route.total_distance_km.toFixed(1)} km · ~${route.total_duration_minutes} min local travel (approx.)`
                   : `${markers.length} mapped stop${markers.length === 1 ? "" : "s"}`}
@@ -291,7 +302,7 @@ export function TripMap({
               href={openStreetMapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-secondary text-brand hover:bg-secondary/80 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-wide uppercase transition"
+              className="bg-secondary text-brand hover:bg-secondary/80 focus-visible:ring-ring/50 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-wide uppercase transition outline-none focus-visible:ring-3"
               aria-label="Open this route in OpenStreetMap"
             >
               OpenStreetMap

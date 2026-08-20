@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Luggage } from "lucide-react";
 
 import { deleteTripAction } from "@/app/trips/actions";
 import { SavedTripCard } from "@/components/dashboard/saved-trip-card";
@@ -60,16 +61,14 @@ export function SavedTripsGrid({ trips, error = null }: SavedTripsGridProps) {
   }
 
   return (
-    <Container className="space-y-8 py-10">
+    <Container className="animate-in fade-in space-y-8 py-10 duration-500">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div className="space-y-2">
-          <p className="text-brand text-xs font-medium tracking-[0.16em] uppercase">
-            Dashboard
-          </p>
-          <h1 className="font-heading text-foreground text-4xl tracking-tight sm:text-5xl">
+          <p className="section-eyebrow">Dashboard</p>
+          <h1 className="section-title text-foreground text-4xl sm:text-5xl">
             Saved trips
           </h1>
-          <p className="text-muted-foreground max-w-xl text-sm sm:text-base">
+          <p className="section-copy max-w-xl sm:text-base">
             Your saved itineraries, all in one place.
           </p>
         </div>
@@ -77,16 +76,14 @@ export function SavedTripsGrid({ trips, error = null }: SavedTripsGridProps) {
       </div>
 
       {actionError ? (
-        <div
-          role="alert"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
-        >
+        <div role="alert" className="field-alert">
           {actionError}
         </div>
       ) : null}
 
       {items.length === 0 ? (
         <EmptyState
+          icon={Luggage}
           title="No trips saved yet"
           description="When you generate itineraries, they’ll land here as calm, glanceable cards. Start a plan to fill this space."
           action={

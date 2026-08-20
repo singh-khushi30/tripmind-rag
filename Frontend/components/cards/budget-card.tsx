@@ -32,13 +32,11 @@ export function BudgetCard({ trip, className }: BudgetCardProps) {
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-secondary text-brand flex size-10 items-center justify-center rounded-2xl">
-            <Wallet className="size-5" />
+            <Wallet className="size-5" aria-hidden />
           </div>
           <div>
-            <p className="text-muted-foreground text-xs tracking-[0.14em] uppercase">
-              Your budget
-            </p>
-            <p className="font-heading text-foreground text-3xl tracking-tight">
+            <p className="section-eyebrow">Your budget</p>
+            <p className="section-title text-foreground text-3xl">
               {formatCurrency(trip.budget.total, trip.budget.currency)}
             </p>
           </div>

@@ -3,11 +3,18 @@ import { SkeletonBlock } from "@/components/loading/skeleton-block";
 
 export function TripResultsSkeleton() {
   return (
-    <Container className="space-y-8 py-10">
+    <Container
+      className="animate-in fade-in space-y-8 py-10 duration-300"
+      aria-busy="true"
+      aria-live="polite"
+    >
       <div className="space-y-3">
         <SkeletonBlock className="h-4 w-28" />
         <SkeletonBlock className="h-10 w-72 max-w-full" />
         <SkeletonBlock className="h-5 w-full max-w-xl" />
+        <p className="text-muted-foreground text-sm">
+          Preparing your itinerary preview…
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

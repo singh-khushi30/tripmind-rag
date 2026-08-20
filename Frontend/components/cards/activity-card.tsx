@@ -44,15 +44,13 @@ export function ActivityCard({
   return (
     <article
       className={cn(
-        "surface-card p-5 transition-shadow hover:shadow-[var(--shadow-lift)]",
+        "surface-card-interactive p-5 sm:p-6",
         className,
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-brand text-xs font-medium tracking-[0.14em] uppercase">
-            {activity.start_time}
-          </p>
+          <p className="section-eyebrow">{activity.start_time}</p>
           <h4 className="text-foreground text-base font-medium tracking-tight">
             {activity.title}
           </h4>

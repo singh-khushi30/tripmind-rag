@@ -125,7 +125,31 @@
   }
 
   .surface-card {
-    @apply bg-card/90 rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/5 backdrop-blur-sm;
+    @apply bg-card/90 rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/5 backdrop-blur-sm transition-[box-shadow,transform] duration-300;
+  }
+
+  .surface-card-interactive {
+    @apply bg-card/90 rounded-2xl shadow-[var(--shadow-soft)] ring-1 ring-black/5 backdrop-blur-sm transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)];
+  }
+
+  .section-eyebrow {
+    @apply text-brand text-xs font-medium tracking-[0.16em] uppercase;
+  }
+
+  .section-title {
+    @apply font-heading text-foreground tracking-tight;
+  }
+
+  .section-copy {
+    @apply text-muted-foreground text-sm leading-relaxed;
+  }
+
+  .field-alert {
+    @apply border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm;
+  }
+
+  .field-note {
+    @apply border-border/80 bg-secondary/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm leading-relaxed;
   }
 
   .hero-grid {

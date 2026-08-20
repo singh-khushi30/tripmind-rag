@@ -5,5 +5,9 @@ type MainProps = {
 };
 
 export function Main({ children }: MainProps) {
-  return <main className="flex flex-1 flex-col">{children}</main>;
+  return (
+    <main className="animate-in fade-in flex flex-1 flex-col duration-300">
+      {children}
+    </main>
+  );
 }

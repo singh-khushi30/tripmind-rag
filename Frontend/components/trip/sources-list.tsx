@@ -18,10 +18,8 @@ type SourcesListProps = {
 
 export function SourcesList({ sources, className }: SourcesListProps) {
   return (
-    <section className={cn("surface-card p-5", className)}>
-      <h3 className="text-foreground text-sm font-medium tracking-tight">
-        Sources used
-      </h3>
+    <section className={cn("surface-card p-5 sm:p-6", className)}>
+      <h3 className="section-title text-foreground text-base">Sources used</h3>
       <ul className="mt-4 space-y-3">
         {sources.map((source) => {
           const Icon = SOURCE_ICON[source.type];

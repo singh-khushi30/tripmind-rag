@@ -8,6 +8,7 @@ import { loginAction, type AuthActionState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const initialState: AuthActionState = { error: null };
 
@@ -28,7 +29,7 @@ export function LoginForm({ nextPath = "/dashboard" }: LoginFormProps) {
       {state.error ? (
         <div
           role="alert"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
+          className="field-alert"
         >
           {state.error}
         </div>
@@ -45,15 +46,15 @@ export function LoginForm({ nextPath = "/dashboard" }: LoginFormProps) {
           placeholder="you@example.com"
           className="h-11"
           disabled={isPending}
+          aria-invalid={state.error ? true : undefined}
         />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
           minLength={6}
@@ -65,7 +66,7 @@ export function LoginForm({ nextPath = "/dashboard" }: LoginFormProps) {
 
       <Button
         type="submit"
-        className="h-12 w-full text-base"
+        className="w-full text-base"
         size="lg"
         disabled={isPending}
         aria-busy={isPending}

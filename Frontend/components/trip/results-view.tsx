@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CloudOff, Wallet } from "lucide-react";
 
 import { BudgetCard } from "@/components/cards/budget-card";
 import { TripSummaryCard } from "@/components/cards/trip-summary-card";
 import { Container } from "@/components/layout/container";
 import { TripResultsSkeleton } from "@/components/loading/trip-results-skeleton";
 import { TripMapPanel } from "@/components/map/trip-map-panel";
+import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
+import { InlineEmpty } from "@/components/states/inline-empty";
 import { DayTimeline } from "@/components/trip/day-timeline";
 import { ExportPdfButton } from "@/components/trip/export-pdf-button";
 import { SourcesUsedPanel } from "@/components/trip/sources-used-panel";
@@ -217,16 +220,14 @@ function ResultsReady({ trip: initialTrip }: { trip: TripResult }) {
         }`
       : trip.weather?.message;
   return (
-    <Container className="space-y-8 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <Container className="animate-in fade-in space-y-8 py-10 duration-500">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <p className="text-brand text-xs font-medium tracking-[0.16em] uppercase">
-            Generated itinerary
-          </p>
-          <h1 className="font-heading text-foreground text-4xl tracking-tight sm:text-5xl">
+          <p className="section-eyebrow">Generated itinerary</p>
+          <h1 className="section-title text-foreground text-4xl sm:text-5xl">
             Your trip preview
           </h1>
-          <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed sm:text-base">
+          <p className="section-copy max-w-2xl sm:text-base">
             A personalized itinerary designed around your budget, interests, and
             travel pace.
           </p>
@@ -236,41 +237,50 @@ function ResultsReady({ trip: initialTrip }: { trip: TripResult }) {
         ) : null}
       </div>
 
-      <div
-        role="note"
-        className="border-border/80 bg-secondary/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm leading-relaxed"
-      >
+      <div role="note" className="field-note">
         Recommendations are grounded in retrieved Wikipedia and Wikivoyage
         travel information. Prices and availability remain estimates.
       </div>
 
+      {weatherStatus !== "available" ? (
+        <InlineEmpty
+          icon={CloudOff}
+          title={
+            weatherStatus === "no_start_date"
+              ? "Weather needs travel dates"
+              : "Weather unavailable"
+          }
+          description={
+            trip.weather?.message ??
+            (weatherStatus === "no_start_date"
+              ? "Add a start date when planning so we can fetch forecasts for each day."
+              : "We couldn’t load a forecast for these dates. Outdoor tips may be less precise.")
+          }
+        />
+      ) : null}
+
       <div className="border-border/80 bg-card/40 grid gap-3 rounded-2xl border px-4 py-4 text-sm sm:grid-cols-3">
         <div>
-          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-            Currency
-          </p>
-          <p className="text-foreground mt-1">
+          <p className="section-eyebrow">Currency</p>
+          <p className="text-foreground mt-1.5">
             Local {trip.budget.destinationLocalCurrency ?? "—"} · Display{" "}
             {trip.budget.currency}
           </p>
           <p className="text-muted-foreground mt-1 text-xs">
-            Exchange: {trip.budget.exchangeStatus ?? trip.budget.conversionStatus ?? "—"}
+            Exchange:{" "}
+            {trip.budget.exchangeStatus ?? trip.budget.conversionStatus ?? "—"}
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-            Weather
-          </p>
-          <p className="text-foreground mt-1">{weatherLabel}</p>
+          <p className="section-eyebrow">Weather</p>
+          <p className="text-foreground mt-1.5">{weatherLabel}</p>
           {weatherDetail ? (
             <p className="text-muted-foreground mt-1 text-xs">{weatherDetail}</p>
           ) : null}
         </div>
         <div>
-          <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-            Utilization
-          </p>
-          <p className="text-foreground mt-1">
+          <p className="section-eyebrow">Utilization</p>
+          <p className="text-foreground mt-1.5">
             {typeof trip.budget.percentageUsed === "number"
               ? `${Math.round(trip.budget.percentageUsed)}% of budget`
               : "—"}
@@ -280,7 +290,16 @@ function ResultsReady({ trip: initialTrip }: { trip: TripResult }) {
 
       <div className="grid gap-4 md:grid-cols-2">
         <TripSummaryCard trip={trip} />
-        <BudgetCard trip={trip} />
+        {typeof trip.budget.estimatedTotalCost === "number" ? (
+          <BudgetCard trip={trip} />
+        ) : (
+          <EmptyState
+            compact
+            icon={Wallet}
+            title="Budget details unavailable"
+            description="Cost estimates didn’t come through for this trip. You can still follow the day-by-day plan."
+          />
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">

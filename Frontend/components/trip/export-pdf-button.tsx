@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { FileDown, LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, FileDown, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type ExportPdfButtonProps = {
   tripId: string;
@@ -13,10 +14,19 @@ type ExportPdfButtonProps = {
 export function ExportPdfButton({ tripId, className }: ExportPdfButtonProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!success) return;
+    const timer = window.setTimeout(() => setSuccess(false), 3200);
+    return () => window.clearTimeout(timer);
+  }, [success]);
 
   async function onExport() {
+    if (pending) return;
     setPending(true);
     setError(null);
+    setSuccess(false);
 
     try {
       const response = await fetch(`/api/trips/${tripId}/pdf`, {
@@ -25,7 +35,8 @@ export function ExportPdfButton({ tripId, className }: ExportPdfButtonProps) {
       });
 
       if (!response.ok) {
-        let message = "We couldn’t prepare your itinerary PDF. Please try again.";
+        let message =
+          "We couldn’t prepare your itinerary PDF. Please try again.";
         try {
           const payload = (await response.json()) as { error?: string };
           if (payload.error) message = payload.error;
@@ -49,6 +60,7 @@ export function ExportPdfButton({ tripId, className }: ExportPdfButtonProps) {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      setSuccess(true);
     } catch {
       setError("We couldn’t prepare your itinerary PDF. Please try again.");
     } finally {
@@ -56,24 +68,53 @@ export function ExportPdfButton({ tripId, className }: ExportPdfButtonProps) {
     }
   }
 
+  const isDemo = !tripId || tripId.startsWith("trip_demo");
+
   return (
-    <div className={className}>
+    <div className={cn("space-y-2", className)}>
       <Button
         type="button"
-        variant="outline"
+        variant={success ? "secondary" : "outline"}
         onClick={onExport}
-        disabled={pending || !tripId || tripId.startsWith("trip_demo")}
+        disabled={pending || isDemo}
+        aria-busy={pending}
+        aria-label={
+          pending
+            ? "Preparing itinerary PDF"
+            : success
+              ? "PDF downloaded"
+              : "Export itinerary as PDF"
+        }
       >
         {pending ? (
           <LoaderCircle data-icon="inline-start" className="animate-spin" />
+        ) : success ? (
+          <Check data-icon="inline-start" />
         ) : (
           <FileDown data-icon="inline-start" />
         )}
-        {pending ? "Preparing your itinerary PDF…" : "Export PDF"}
+        {pending
+          ? "Preparing PDF…"
+          : success
+            ? "PDF downloaded"
+            : "Export PDF"}
       </Button>
       {error ? (
-        <p className="text-destructive mt-2 text-xs" role="alert">
-          {error}
+        <p className="text-destructive text-xs leading-relaxed" role="alert">
+          {error}{" "}
+          <button
+            type="button"
+            className="underline underline-offset-2"
+            onClick={onExport}
+            disabled={pending}
+          >
+            Retry
+          </button>
+        </p>
+      ) : null}
+      {success && !error ? (
+        <p className="text-muted-foreground text-xs" role="status">
+          Your itinerary PDF is ready in your downloads.
         </p>
       ) : null}
     </div>

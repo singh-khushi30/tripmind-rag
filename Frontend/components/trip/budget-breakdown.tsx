@@ -14,8 +14,8 @@ export function BudgetBreakdown({
   className,
 }: BudgetBreakdownProps) {
   return (
-    <section className={cn("surface-card p-5", className)}>
-      <h3 className="text-foreground text-sm font-medium tracking-tight">
+    <section className={cn("surface-card p-5 sm:p-6", className)}>
+      <h3 className="section-title text-foreground text-base">
         Budget breakdown
       </h3>
       <ul className="mt-4 space-y-3.5">

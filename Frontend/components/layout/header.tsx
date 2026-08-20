@@ -15,7 +15,10 @@ export async function Header() {
   return (
     <header className="border-border/70 bg-background/75 sticky top-0 z-50 border-b backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2.5">
+        <Link
+          href="/"
+          className="group focus-visible:ring-ring/50 flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3"
+        >
           <span className="bg-brand text-brand-foreground flex size-8 items-center justify-center rounded-xl text-xs font-semibold tracking-tight shadow-[var(--shadow-soft)]">
             TM
           </span>

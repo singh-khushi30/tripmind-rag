@@ -1,5 +1,6 @@
-import { ExternalLink } from "lucide-react";
+import { BookOpen, ExternalLink } from "lucide-react";
 
+import { InlineEmpty } from "@/components/states/inline-empty";
 import { dedupeCitationsBySourceId } from "@/lib/trip/dedupe-sources";
 import type { TripCitationSource } from "@/types/trip";
 
@@ -24,16 +25,22 @@ function formatFetchedAt(value: string | null): string | null {
 }
 
 export function SourcesUsedPanel({ citations }: SourcesUsedPanelProps) {
-  if (citations.length === 0) return null;
+  if (citations.length === 0) {
+    return (
+      <InlineEmpty
+        icon={BookOpen}
+        title="No citations yet"
+        description="When TripMind retrieves Wikipedia or Wikivoyage pages for this trip, they’ll appear here."
+      />
+    );
+  }
 
   const sources = dedupeCitationsBySourceId(citations);
 
   return (
     <section className="border-border/80 bg-secondary/30 rounded-2xl border px-4 py-4">
-      <h2 className="font-heading text-foreground text-lg tracking-tight">
-        Sources used
-      </h2>
-      <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+      <h2 className="section-title text-foreground text-lg">Sources used</h2>
+      <p className="section-copy mt-1">
         Factual place and planning details come from these retrieved pages.
         Prices remain AI estimates.
       </p>
@@ -49,10 +56,13 @@ export function SourcesUsedPanel({ citations }: SourcesUsedPanelProps) {
                 href={source.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-foreground hover:text-brand inline-flex items-start gap-1.5 font-medium underline-offset-2 hover:underline"
+                className="text-foreground hover:text-brand inline-flex items-start gap-1.5 font-medium underline-offset-2 transition-colors hover:underline focus-visible:ring-ring/50 rounded-sm focus-visible:ring-3 focus-visible:outline-none"
               >
                 <span>{source.source_title}</span>
-                <ExternalLink className="mt-0.5 size-3.5 shrink-0 opacity-70" />
+                <ExternalLink
+                  className="mt-0.5 size-3.5 shrink-0 opacity-70"
+                  aria-hidden
+                />
               </a>
               <p className="text-muted-foreground mt-0.5">
                 {SOURCE_LABEL[source.source_type]}

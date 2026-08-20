@@ -37,7 +37,7 @@ export function HeaderNav({ user }: HeaderNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-full px-3.5 py-1.5 text-sm transition-colors",
+                "focus-visible:ring-ring/50 rounded-full px-3.5 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3",
                 active
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/70",
@@ -72,7 +72,7 @@ export function HeaderNav({ user }: HeaderNavProps) {
         size="icon"
         className="md:hidden"
         onClick={() => setOpen((value) => !value)}
-        aria-label="Toggle menu"
+        aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
       >
         {open ? <X /> : <Menu />}
@@ -86,7 +86,7 @@ export function HeaderNav({ user }: HeaderNavProps) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="text-foreground hover:bg-secondary rounded-xl px-3 py-2.5 text-sm"
+                className="text-foreground hover:bg-secondary focus-visible:ring-ring/50 rounded-xl px-3 py-2.5 text-sm outline-none focus-visible:ring-3"
               >
                 {item.label}
               </Link>

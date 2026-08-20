@@ -221,7 +221,7 @@ export function PlannerForm() {
         <div
           id={`${formId}-submit-error`}
           role="alert"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
+          className="field-alert"
         >
           {submitError}
         </div>
@@ -680,7 +680,7 @@ export function PlannerForm() {
         <Button
           type="submit"
           disabled={busy}
-          className="h-12 flex-1 text-base"
+          className="flex-1 text-base"
           size="lg"
           aria-busy={busy}
         >
@@ -697,7 +697,7 @@ export function PlannerForm() {
         <Button
           type="button"
           variant="outline"
-          className="h-12 sm:w-40"
+          className="sm:w-40"
           size="lg"
           disabled={busy}
           onClick={() => {

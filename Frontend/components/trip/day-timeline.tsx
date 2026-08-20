@@ -79,10 +79,7 @@ export function DayTimeline({
   return (
     <div className={cn("space-y-8", className)}>
       {startDateMissing ? (
-        <div
-          role="note"
-          className="border-border/80 bg-secondary/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm"
-        >
+        <div role="note" className="field-note">
           Add travel dates to include weather-aware planning.
         </div>
       ) : null}
@@ -91,11 +88,11 @@ export function DayTimeline({
         <section key={day.day_number} className="relative">
           <div className="mb-4 flex items-end justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-brand text-xs font-medium tracking-[0.16em] uppercase">
+              <p className="section-eyebrow">
                 Day {day.day_number}
                 {day.calendar_date ? ` · ${day.calendar_date}` : null}
               </p>
-              <h3 className="font-heading text-foreground mt-1 text-2xl tracking-tight">
+              <h3 className="section-title text-foreground mt-1 text-2xl">
                 {day.title}
               </h3>
               <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">

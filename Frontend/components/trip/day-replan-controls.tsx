@@ -194,13 +194,17 @@ export function DayReplanControls({
             />
           ) : null}
 
-          <Button type="button" onClick={runReplan} disabled={pending}>
-            <CloudRain data-icon="inline-start" />
+          <Button type="button" onClick={runReplan} disabled={pending} aria-busy={pending}>
+            {pending ? (
+              <CloudRain data-icon="inline-start" className="animate-pulse" />
+            ) : (
+              <CloudRain data-icon="inline-start" />
+            )}
             {pending ? "Re-planning…" : "Apply re-plan"}
           </Button>
 
           {pending ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-xs" role="status">
               {STATUS_MESSAGES[statusIndex]}
             </p>
           ) : null}
@@ -208,8 +212,16 @@ export function DayReplanControls({
       ) : null}
 
       {error ? (
-        <p className="text-destructive text-xs" role="alert">
-          {error}
+        <p className="text-destructive text-xs leading-relaxed" role="alert">
+          {error}{" "}
+          <button
+            type="button"
+            className="underline underline-offset-2"
+            onClick={runReplan}
+            disabled={pending}
+          >
+            Retry
+          </button>
         </p>
       ) : null}
     </div>

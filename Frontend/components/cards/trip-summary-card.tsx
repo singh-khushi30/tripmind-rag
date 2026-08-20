@@ -21,13 +21,13 @@ export function TripSummaryCard({ trip, className }: TripSummaryCardProps) {
       <div className="relative space-y-4">
         <Badge variant="secondary">Trip summary</Badge>
         <div>
-          <h2 className="font-heading text-foreground text-3xl tracking-tight sm:text-4xl">
+          <h2 className="section-title text-foreground text-3xl sm:text-4xl">
             {trip.destination}
             {trip.country ? (
               <span className="text-muted-foreground">, {trip.country}</span>
             ) : null}
           </h2>
-          <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed sm:text-[15px]">
+          <p className="section-copy mt-3 max-w-2xl sm:text-[15px]">
             {trip.summary}
           </p>
         </div>

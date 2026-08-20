@@ -1,8 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import {
+  SESSION_STARTED_COOKIE,
+  sessionStartedCookieOptions,
+} from "@/lib/auth/session-timeout";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema, signupSchema } from "@/lib/validation/auth";
 
@@ -16,6 +21,23 @@ function getSafeRedirect(path?: string | null) {
     return "/dashboard";
   }
   return path;
+}
+
+async function markSessionStarted() {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    SESSION_STARTED_COOKIE,
+    String(Date.now()),
+    sessionStartedCookieOptions(),
+  );
+}
+
+async function clearSessionStarted() {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_STARTED_COOKIE, "", {
+    ...sessionStartedCookieOptions(0),
+    maxAge: 0,
+  });
 }
 
 export async function loginAction(
@@ -39,6 +61,8 @@ export async function loginAction(
   if (error) {
     return { error: error.message };
   }
+
+  await markSessionStarted();
 
   const next = getSafeRedirect(formData.get("next")?.toString());
   revalidatePath("/", "layout");
@@ -86,6 +110,7 @@ export async function signupAction(
     };
   }
 
+  await markSessionStarted();
   revalidatePath("/", "layout");
   redirect("/dashboard");
 }
@@ -93,6 +118,7 @@ export async function signupAction(
 export async function logoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  await clearSessionStarted();
   revalidatePath("/", "layout");
   redirect("/");
 }

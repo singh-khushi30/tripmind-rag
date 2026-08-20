@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/layout/container";
 import { ErrorState } from "@/components/states/error-state";
 import { ResultsView } from "@/components/trip/results-view";
+import { Button } from "@/components/ui/button";
 import { itineraryDataSchema } from "@/lib/gemini/schema";
 import { ensureTripLocations } from "@/lib/maps/ensure-trip-locations";
 import { tripToTripResult } from "@/lib/trips/mappers";
@@ -52,6 +54,9 @@ export default async function TripPage({ params }: TripPageProps) {
         <ErrorState
           title="Couldn’t load this trip"
           description="Something went wrong while loading your itinerary. Please try again."
+          action={
+            <Button render={<Link href={`/trip/${id}`} />}>Try again</Button>
+          }
         />
       </Container>
     );
